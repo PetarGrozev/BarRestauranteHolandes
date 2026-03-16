@@ -1,0 +1,37 @@
+{
+  "name": "bar-restaurant-app",
+  "version": "1.0.0",
+  "description": "A web application for managing orders and operations in a bar/restaurant.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@prisma/client": "^7.0.0",
+    "dotenv": "^10.0.0",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.2",
+    "@types/react-dom": "^18.3.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.0.0",
+    "prisma": "^7.0.0",
+    "typescript": "^5.2.0"
+  },
+  "keywords": [
+    "bar",
+    "restaurant",
+    "orders",
+    "management"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

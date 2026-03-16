@@ -1,0 +1,225 @@
+html, body, * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background-color: #f5f5f7;
+    color: #111827;
+    line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    color: #495057;
+}
+
+a {
+    text-decoration: none;
+    color: #007bff;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.button {
+    display: inline-block;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+}
+
+/* App shell minimalista */
+.app-body {
+    background: radial-gradient(circle at top, #f9fafb, #e5e7eb);
+}
+
+.shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.shell-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+    backdrop-filter: blur(12px);
+    background-color: rgba(249, 250, 251, 0.9);
+}
+
+.shell-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.shell-logo {
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #111827, #4b5563);
+}
+
+.shell-title {
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    font-size: 14px;
+    text-transform: uppercase;
+    color: #374151;
+}
+
+.shell-nav {
+    display: flex;
+    gap: 16px;
+    font-size: 14px;
+}
+
+.shell-nav a {
+    color: #4b5563;
+    padding: 6px 10px;
+    border-radius: 999px;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.shell-nav a:hover {
+    background-color: rgba(15, 23, 42, 0.06);
+    color: #111827;
+}
+
+.shell-main {
+    flex: 1;
+    padding: 32px;
+}
+
+.shell-footer {
+    padding: 12px 32px 20px;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+/* Home minimalista */
+.home {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.home-hero {
+    margin-bottom: 32px;
+}
+
+.home-title {
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+}
+
+.home-subtitle {
+    font-size: 15px;
+    color: #6b7280;
+}
+
+.home-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+.home-card {
+    background-color: #ffffff;
+    border-radius: 14px;
+    padding: 18px 18px 16px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+}
+
+.home-card h2 {
+    font-size: 16px;
+    margin-bottom: 6px;
+}
+
+.home-card p {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 14px;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+.btn-primary {
+    background-color: #111827;
+    color: #f9fafb;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.15);
+}
+
+.btn-primary:hover {
+    background-color: #020617;
+}
+
+.btn-secondary {
+    background-color: #ffffff;
+    color: #111827;
+    border-color: rgba(148, 163, 184, 0.7);
+}
+
+.btn-secondary:hover {
+    background-color: #f9fafb;
+}
+
+.btn-ghost {
+    background-color: transparent;
+    color: #4b5563;
+    border-color: transparent;
+}
+
+.btn-ghost:hover {
+    background-color: rgba(15, 23, 42, 0.04);
+}
+
+.button:hover {
+    background-color: #0056b3;
+}
+
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #28a745;
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    z-index: 1000;
+}
+
+.timer {
+    font-weight: bold;
+    color: #dc3545;
+}
