@@ -27,6 +27,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const orders = await getOrders();
     const flatOrders = orders.map(order => ({
       id: order.id,
+      table: order.table ? `Mesa ${order.table.number} ${order.table.area === 'TERRACE' ? 'Terraza' : 'Interior'}` : '',
       status: order.status,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,

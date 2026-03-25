@@ -1,25 +1,30 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { db } from '../../../lib/db';
+import { updateOrderStatus } from '../../../lib/db';
 
-export default async function updateStatus(req: NextApiRequest, res: NextApiResponse) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Method not allowed' });
-    }
+const VALID_STATUSES = ['RECEIVED', 'PREPARING', 'READY', 'DELIVERED'];
 
-    const { orderId, status } = req.body;
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
 
-    if (!orderId || !status) {
-        return res.status(400).json({ message: 'Order ID and status are required' });
-    }
+  const { orderId, status } = req.body;
+  const upperStatus = String(status).toUpperCase();
+  const normalizedOrderId = Number(orderId);
 
-    try {
-        const updatedOrder = await db.order.update({
-            where: { id: orderId },
-            data: { status },
-        });
+  if (!status || !Number.isInteger(normalizedOrderId) || normalizedOrderId <= 0) {
+    return res.status(400).json({ message: 'Order ID and status are required' });
+  }
 
-        return res.status(200).json(updatedOrder);
-    } catch (error) {
-        return res.status(500).json({ message: 'Error updating order status', error });
-    }
+  if (!VALID_STATUSES.includes(upperStatus)) {
+    return res.status(400).json({ message: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` });
+  }
+
+  try {
+    const updatedOrder = await updateOrderStatus(normalizedOrderId, upperStatus);
+    return res.status(200).json(updatedOrder);
+  } catch (error) {
+    console.error('update status error', error);
+    return res.status(500).json({ message: 'Error updating order status' });
+  }
 }

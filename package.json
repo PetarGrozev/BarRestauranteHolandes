@@ -8,9 +8,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "db:push": "npx prisma db push",
+    "db:seed": "npx tsx scripts/seed.ts",
+    "db:studio": "npx prisma studio",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.2",
+    "@prisma/adapter-libsql": "^7.5.0",
     "@prisma/client": "^7.0.0",
     "dotenv": "^10.0.0",
     "next": "latest",
@@ -24,6 +30,7 @@
     "eslint": "^8.57.0",
     "prettier": "^3.0.0",
     "prisma": "^7.0.0",
+    "tsx": "^4.7.0",
     "typescript": "^5.2.0"
   },
   "keywords": [

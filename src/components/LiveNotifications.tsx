@@ -1,29 +1,40 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import useOrders from '../hooks/useOrders';
+import type { Order } from '../types';
 
 const LiveNotifications: React.FC = () => {
-    const { orders } = useOrders();
-    const [notifications, setNotifications] = useState<string[]>([]);
+  const { orders } = useOrders();
+  const [notifications, setNotifications] = useState<string[]>([]);
+  const prevCountRef = useRef(0);
 
-    useEffect(() => {
-        if (orders.length > 0) {
-            const newNotifications = orders.map(order => `New order: ${order.id} - ${order.items.join(', ')}`);
-            setNotifications(prev => [...prev, ...newNotifications]);
-        }
-    }, [orders]);
+  useEffect(() => {
+    if (orders.length > prevCountRef.current) {
+      const newOrders = orders.slice(0, orders.length - prevCountRef.current);
+      const msgs = newOrders.map((order: Order) => {
+        const items = order.orderItems
+          .map(i => `${i.product?.name ?? 'Producto'} x${i.quantity}`)
+          .join(', ');
+        return `Nuevo pedido #${order.id}: ${items}`;
+      });
+      setNotifications(prev => [...msgs, ...prev].slice(0, 10));
+    }
+    prevCountRef.current = orders.length;
+  }, [orders]);
 
-    return (
-        <div className="live-notifications">
-            <h2>Live Notifications</h2>
-            <ul>
-                {notifications.map((notification, index) => (
-                    <li key={index}>{notification}</li>
-                ))}
-            </ul>
-        </div>
-    );
+  if (notifications.length === 0) return null;
+
+  return (
+    <div className="live-notifications">
+      <h3>Notificaciones</h3>
+      <ul>
+        {notifications.map((msg, i) => (
+          <li key={i}>{msg}</li>
+        ))}
+      </ul>
+    </div>
+  );
 };
 
 export default LiveNotifications;

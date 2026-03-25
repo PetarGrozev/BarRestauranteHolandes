@@ -1,31 +1,57 @@
+export type OrderTarget = 'KITCHEN' | 'STAFF' | 'BOTH';
+export type OrderStatus = 'RECEIVED' | 'PREPARING' | 'READY' | 'DELIVERED';
+export type ProductCategory = 'FOOD' | 'DRINK';
+export type TableArea = 'INTERIOR' | 'TERRACE';
+
 export interface Product {
-    id: string;
-    name: string;
-    description?: string;
-    price: number;
-    imageUrl?: string;
-    orderDestination: 'kitchen' | 'staff' | 'both';
+  id: number;
+  name: string;
+  description?: string | null;
+  price: number;
+  imageUrl?: string | null;
+  category: ProductCategory;
+  orderTarget: OrderTarget;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrderItem {
+  id: number;
+  orderId: number;
+  productId: number;
+  quantity: number;
+  price: number;
+  product: Product;
 }
 
 export interface Order {
-    id: string;
-    products: Product[];
-    totalPrice: number;
-    status: 'pending' | 'in_progress' | 'completed';
-    createdAt: Date;
+  id: number;
+  tableId?: number | null;
+  table?: DiningTable | null;
+  orderItems: OrderItem[];
+  status: OrderStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DiningTable {
+  id: number;
+  number: number;
+  area: TableArea;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Admin {
-    id: string;
-    email: string;
+  id: number;
+  email: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface Staff {
-    id: string;
-    name: string;
-}
-
-export interface HoldTimer {
-    duration: number; // in minutes
-    startTime: Date;
+export interface CartItem {
+  productId: number;
+  product: Product;
+  quantity: number;
 }

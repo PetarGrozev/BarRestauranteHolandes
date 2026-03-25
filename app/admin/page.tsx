@@ -3,13 +3,13 @@
 import AdminControls from '@/components/AdminControls';
 
 const AdminPage = () => {
-    return (
-        <div>
-            <h1>Admin Dashboard</h1>
-            <AdminControls />
-            {/* Additional admin functionalities can be added here */}
-        </div>
-    );
+  return (
+    <div className="admin-page">
+      <h1>Panel de Administración</h1>
+      <p className="page-subtitle">Gestiona tu negocio</p>
+      <AdminControls />
+    </div>
+  );
 };
 
 export default AdminPage;

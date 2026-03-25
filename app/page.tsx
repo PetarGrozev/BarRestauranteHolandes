@@ -12,8 +12,8 @@ const HomePage = () => {
             <div className="home-grid">
                 <div className="home-card">
                     <h2>Pedidos</h2>
-                    <p>Visualiza y lanza pedidos en tiempo real.</p>
-                    <a href="/order" className="btn-primary">Ir a pedidos</a>
+                    <p>Selecciona mesa y lanza pedidos en tiempo real.</p>
+                    <a href="/tables" className="btn-primary">Elegir mesa</a>
                 </div>
                 <div className="home-card">
                     <h2>Cocina</h2>

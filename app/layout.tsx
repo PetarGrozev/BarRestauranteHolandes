@@ -20,6 +20,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
                             <span className="shell-title">Bar/Restaurant App</span>
                         </div>
                         <nav className="shell-nav">
+                            <a href="/tables">Mesas</a>
                             <a href="/order">Pedidos</a>
                             <a href="/kitchen">Cocina</a>
                             <a href="/staff">Sala</a>

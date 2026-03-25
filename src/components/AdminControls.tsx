@@ -1,38 +1,41 @@
 "use client";
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 
 const AdminControls: React.FC = () => {
-    const handleAddAdmin = () => {
-        // Logic to add an admin
-    };
+  const router = useRouter();
 
-    const handleRemoveAdmin = () => {
-        // Logic to remove an admin
-    };
+  const handleExportCSV = async () => {
+    window.open('/api/orders/export', '_blank');
+  };
 
-    const handleAddProduct = () => {
-        // Logic to add a product
-    };
-
-    const handleEditProduct = () => {
-        // Logic to edit a product
-    };
-
-    const handleExportCSV = () => {
-        // Logic to export order data as CSV
-    };
-
-    return (
-        <div className="admin-controls">
-            <h2>Admin Controls</h2>
-            <button onClick={handleAddAdmin}>Add Admin</button>
-            <button onClick={handleRemoveAdmin}>Remove Admin</button>
-            <button onClick={handleAddProduct}>Add Product</button>
-            <button onClick={handleEditProduct}>Edit Product</button>
-            <button onClick={handleExportCSV}>Export CSV</button>
+  return (
+    <div className="admin-controls">
+      <div className="admin-controls-grid">
+        <div className="admin-card" onClick={() => router.push('/admin/products')}>
+          <h3>Productos</h3>
+          <p>Gestiona el menú de productos</p>
         </div>
-    );
+        <div className="admin-card" onClick={() => router.push('/admin/admins')}>
+          <h3>Administradores</h3>
+          <p>Gestiona cuentas de admin</p>
+        </div>
+        <div className="admin-card" onClick={() => router.push('/admin/products/create')}>
+          <h3>Nuevo Producto</h3>
+          <p>Añade un producto al menú</p>
+        </div>
+        <div className="admin-card" onClick={() => router.push('/admin/tables')}>
+          <h3>Mesas</h3>
+          <p>Configura interior y terraza</p>
+        </div>
+        <div className="admin-card" onClick={handleExportCSV}>
+          <h3>Exportar CSV</h3>
+          <p>Descarga los pedidos en CSV</p>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default AdminControls;

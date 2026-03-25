@@ -1,59 +1,113 @@
-import { PrismaClient } from '@prisma/client';
+import 'dotenv/config';
 
-const prisma = new PrismaClient();
+import { PrismaClient } from '@prisma/client';
+import { PrismaLibSql } from '@prisma/adapter-libsql';
+
+const url = process.env.DATABASE_URL || 'file:./dev.db';
+console.log('Using database URL:', url);
+
+const adapter = new PrismaLibSql({ url });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
-    // Seed admins
-    const admin1 = await prisma.admin.create({
-        data: {
-            email: 'admin1@example.com',
-            name: 'Admin One',
-        },
-    });
+  // Clean up
+  await prisma.orderItem.deleteMany();
+  await prisma.order.deleteMany();
+  await prisma.diningTable.deleteMany();
+  await prisma.product.deleteMany();
+  await prisma.admin.deleteMany();
 
-    const admin2 = await prisma.admin.create({
-        data: {
-            email: 'admin2@example.com',
-            name: 'Admin Two',
-        },
-    });
+  const tables = await Promise.all([
+    prisma.diningTable.create({ data: { number: 1, area: 'INTERIOR' } }),
+    prisma.diningTable.create({ data: { number: 2, area: 'INTERIOR' } }),
+    prisma.diningTable.create({ data: { number: 1, area: 'TERRACE' } }),
+  ]);
 
-    // Seed products
-    const product1 = await prisma.product.create({
-        data: {
-            name: 'Pizza Margherita',
-            price: 10.99,
-            category: 'food',
-            orderDestination: 'kitchen',
-        },
-    });
+  // Seed admins
+  const admin1 = await prisma.admin.create({
+    data: { email: 'admin@example.com' },
+  });
 
-    const product2 = await prisma.product.create({
-        data: {
-            name: 'Coca Cola',
-            price: 2.50,
-            category: 'drinks',
-            orderDestination: 'staff',
-        },
-    });
+  // Seed products
+  const products = await Promise.all([
+    prisma.product.create({
+      data: {
+        name: 'Pizza Margherita',
+        description: 'Tomate, mozzarella y albahaca',
+        price: 10.99,
+        category: 'FOOD',
+        orderTarget: 'KITCHEN',
+      },
+    }),
+    prisma.product.create({
+      data: {
+        name: 'Coca Cola',
+        description: 'Refresco 330ml',
+        price: 2.50,
+        category: 'DRINK',
+        orderTarget: 'STAFF',
+      },
+    }),
+    prisma.product.create({
+      data: {
+        name: 'Pasta Carbonara',
+        description: 'Pasta con salsa carbonara',
+        price: 12.99,
+        category: 'FOOD',
+        orderTarget: 'KITCHEN',
+      },
+    }),
+    prisma.product.create({
+      data: {
+        name: 'Cerveza',
+        description: 'Caña de cerveza',
+        price: 3.00,
+        category: 'DRINK',
+        orderTarget: 'STAFF',
+      },
+    }),
+    prisma.product.create({
+      data: {
+        name: 'Hamburguesa Clásica',
+        description: 'Carne, lechuga, tomate y queso',
+        price: 9.50,
+        category: 'FOOD',
+        orderTarget: 'KITCHEN',
+      },
+    }),
+    prisma.product.create({
+      data: {
+        name: 'Agua Mineral',
+        description: 'Botella 500ml',
+        price: 1.50,
+        category: 'DRINK',
+        orderTarget: 'BOTH',
+      },
+    }),
+  ]);
 
-    const product3 = await prisma.product.create({
-        data: {
-            name: 'Pasta Carbonara',
-            price: 12.99,
-            category: 'food',
-            orderDestination: 'kitchen',
-        },
-    });
+  // Seed a sample order
+  const order = await prisma.order.create({
+    data: {
+      status: 'RECEIVED',
+      tableId: tables[0].id,
+      orderItems: {
+        create: [
+          { productId: products[0].id, quantity: 2, price: products[0].price },
+          { productId: products[1].id, quantity: 1, price: products[1].price },
+        ],
+      },
+    },
+  });
 
-    console.log({ admin1, admin2, product1, product2, product3 });
+  console.log('Seed completed:', { admin1, products: products.length, order: order.id });
 }
 
 main()
-    .catch(e => {
-        console.error(e);
-        process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
-    });
+  .catch(e => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

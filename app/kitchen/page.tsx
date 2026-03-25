@@ -1,45 +1,42 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { fetchOrders, updateOrderStatus } from '../lib/realtime';
-import LiveNotifications from '@/components/LiveNotifications';
+import useOrders from '@/hooks/useOrders';
+import OrderTile from '@/components/OrderTile';
+import type { OrderStatus } from '@/types';
+import { getKitchenNextStatus, isKitchenQueueOrder } from '@/lib/orderRouting';
 
 const KitchenPage = () => {
-    const [orders, setOrders] = useState([]);
+  const { orders, loading, updateStatus } = useOrders();
 
-    useEffect(() => {
-        const getOrders = async () => {
-            const fetchedOrders = await fetchOrders();
-            setOrders(fetchedOrders);
-        };
+  const kitchenOrders = orders.filter(isKitchenQueueOrder);
 
-        getOrders();
-    }, []);
+  const handleStatusUpdate = (orderId: number, newStatus: OrderStatus) => {
+    updateStatus(orderId, newStatus);
+  };
 
-    const handleStatusUpdate = async (orderId, status) => {
-        await updateOrderStatus(orderId, status);
-        setOrders(prevOrders => 
-            prevOrders.map(order => 
-                order.id === orderId ? { ...order, status } : order
-            )
-        );
-    };
+  return (
+    <div className="kitchen-page">
+      <h1>Cocina</h1>
+      <p className="page-subtitle">Pedidos en tiempo real — se actualiza automáticamente</p>
 
-    return (
-        <div>
-            <h1>Kitchen Orders</h1>
-            <LiveNotifications />
-            <ul>
-                {orders.map(order => (
-                    <li key={order.id}>
-                        <span>{order.productName} - {order.status}</span>
-                        <button onClick={() => handleStatusUpdate(order.id, 'preparing')}>Preparing</button>
-                        <button onClick={() => handleStatusUpdate(order.id, 'ready')}>Ready</button>
-                    </li>
-                ))}
-            </ul>
+      {loading ? (
+        <p>Cargando pedidos...</p>
+      ) : kitchenOrders.length === 0 ? (
+        <p className="empty-state">No hay pedidos pendientes</p>
+      ) : (
+        <div className="orders-grid">
+          {kitchenOrders.map(order => (
+            <OrderTile
+              key={order.id}
+              order={order}
+              nextStatusOverride={getKitchenNextStatus(order)}
+              onStatusUpdate={handleStatusUpdate}
+            />
+          ))}
         </div>
-    );
+      )}
+    </div>
+  );
 };
 
 export default KitchenPage;
