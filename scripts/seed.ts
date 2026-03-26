@@ -1,12 +1,15 @@
 import 'dotenv/config';
 
 import { PrismaClient } from '@prisma/client';
-import { PrismaLibSql } from '@prisma/adapter-libsql';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 
-const url = process.env.DATABASE_URL || 'file:./dev.db';
-console.log('Using database URL:', url);
+console.log('Using database URL:', process.env.DATABASE_URL ? 'configured' : 'missing');
 
-const adapter = new PrismaLibSql({ url });
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
