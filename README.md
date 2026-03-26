@@ -54,6 +54,23 @@ bar-restaurant-app
    yarn install
    ```
 
+3. Configure the database connection:
+   - Create a Supabase project.
+   - Open `Project Settings > Database` in Supabase.
+   - Copy the pooled connection string into `DATABASE_URL`.
+   - Copy the direct connection string into `DIRECT_URL`.
+   - Use `.env.example` as the base for your local `.env`.
+
+4. Push the Prisma schema:
+   ```
+   npx prisma db push
+   ```
+
+5. Optional: seed the database:
+   ```
+   npx tsx scripts/seed.ts
+   ```
+
 ### Running the Application
 To start the development server, run:
 ```
@@ -64,6 +81,22 @@ or
 yarn dev
 ```
 Visit `http://localhost:3000` in your browser.
+
+## Supabase Database
+
+This project uses Prisma with Supabase Postgres. You do not need to install the Supabase JavaScript client unless you also want Supabase Auth, Realtime, or Storage.
+
+Required environment variables:
+
+```env
+DATABASE_URL="postgresql://postgres.<project-ref>:<password>@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
+DIRECT_URL="postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres"
+```
+
+- `DATABASE_URL`: pooled connection used by the deployed app.
+- `DIRECT_URL`: direct connection used by Prisma schema operations.
+
+On Vercel, add both variables in the project environment settings before deploying.
 
 ### Deployment
 To deploy the application on Vercel:
