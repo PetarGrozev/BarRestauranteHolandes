@@ -1,34 +1,51 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-const useHoldTimer = (initialTime = 10) => {
-    const [timeLeft, setTimeLeft] = useState(initialTime * 60);
-    const [isActive, setIsActive] = useState(false);
+type UseHoldTimerOptions = {
+    startedAt: string;
+    isCompleted?: boolean;
+    limitInSeconds?: number;
+};
+
+function getRemainingSeconds(startedAt: string, limitInSeconds: number) {
+    const start = new Date(startedAt).getTime();
+    const now = Date.now();
+    const deadline = start + limitInSeconds * 1000;
+    return Math.max(0, Math.ceil((deadline - now) / 1000));
+}
+
+function formatTime(seconds: number) {
+    const safeSeconds = Math.max(0, seconds);
+    const minutes = Math.floor(safeSeconds / 60);
+    const remainingSeconds = safeSeconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+}
+
+const useHoldTimer = ({ startedAt, isCompleted = false, limitInSeconds = 10 }: UseHoldTimerOptions) => {
+    const [timeLeft, setTimeLeft] = useState(() => (isCompleted ? 0 : getRemainingSeconds(startedAt, limitInSeconds)));
 
     useEffect(() => {
-        let timer: NodeJS.Timeout;
-
-        if (isActive && timeLeft > 0) {
-            timer = setInterval(() => {
-                setTimeLeft((prevTime) => prevTime - 1);
-            }, 1000);
-        } else if (timeLeft === 0) {
-            setIsActive(false);
-            // Trigger notification or any other action when the timer ends
+        if (isCompleted) {
+            setTimeLeft(0);
+            return;
         }
 
-        return () => clearInterval(timer);
-    }, [isActive, timeLeft]);
+        setTimeLeft(getRemainingSeconds(startedAt, limitInSeconds));
 
-    const startTimer = () => {
-        setIsActive(true);
+        const timer = window.setInterval(() => {
+            setTimeLeft(getRemainingSeconds(startedAt, limitInSeconds));
+        }, 1000);
+
+        return () => window.clearInterval(timer);
+    }, [isCompleted, limitInSeconds, startedAt]);
+
+    const isExpired = !isCompleted && timeLeft === 0;
+    const formattedTime = useMemo(() => formatTime(timeLeft), [timeLeft]);
+
+    return {
+        timeLeft,
+        isExpired,
+        formattedTime,
     };
-
-    const resetTimer = () => {
-        setIsActive(false);
-        setTimeLeft(initialTime * 60);
-    };
-
-    return { timeLeft, isActive, startTimer, resetTimer };
 };
 
 export default useHoldTimer;

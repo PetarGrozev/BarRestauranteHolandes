@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import HoldTimer from './HoldTimer';
 import type { Order, OrderStatus, TableArea } from '../types';
 
 interface OrderTileProps {
@@ -8,6 +9,7 @@ interface OrderTileProps {
   onStatusUpdate?: (orderId: number, newStatus: OrderStatus) => void;
   nextStatusOverride?: OrderStatus | null;
   onDeleteRequest?: (order: Order) => void;
+  showDeliveryTimer?: boolean;
 }
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
@@ -35,7 +37,7 @@ const AREA_LABELS: Record<TableArea, string> = {
   TERRACE: 'Terraza',
 };
 
-const OrderTile: React.FC<OrderTileProps> = ({ order, onStatusUpdate, nextStatusOverride, onDeleteRequest }) => {
+const OrderTile: React.FC<OrderTileProps> = ({ order, onStatusUpdate, nextStatusOverride, onDeleteRequest, showDeliveryTimer = false }) => {
   const total = order.orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const nextStatus = nextStatusOverride ?? NEXT_STATUS[order.status] ?? null;
 
@@ -69,6 +71,9 @@ const OrderTile: React.FC<OrderTileProps> = ({ order, onStatusUpdate, nextStatus
           {new Date(order.createdAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
         </span>
       </div>
+      {showDeliveryTimer && (
+        <HoldTimer startedAt={order.createdAt} isCompleted={order.status === 'DELIVERED'} />
+      )}
       {onStatusUpdate && nextStatus && (
         <button
           className="btn-primary order-tile-action"
