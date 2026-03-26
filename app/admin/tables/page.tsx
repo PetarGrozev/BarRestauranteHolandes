@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import QRCode from 'qrcode';
+import AppToastStack from '@/components/AppToast';
+import useAppToasts from '@/hooks/useAppToasts';
+import { getCustomerTableUrl } from '@/lib/tableLinks';
 import type { DiningTable } from '@/types';
 
 type TablesResponse = {
@@ -15,24 +19,21 @@ function formatNumbers(numbers: number[]) {
   return numbers.join(', ');
 }
 
-function parseNumbers(value: string) {
-  return value
-    .split(/[\s,;]+/)
-    .map(item => item.trim())
-    .filter(Boolean)
-    .map(item => Number(item));
-}
-
-function isValidNumbers(numbers: number[]) {
-  return numbers.every(number => Number.isInteger(number) && number > 0) && new Set(numbers).size === numbers.length;
-}
-
 const AdminTablesPage = () => {
   const [tables, setTables] = useState<DiningTable[]>([]);
-  const [interiorNumbers, setInteriorNumbers] = useState('');
-  const [terraceNumbers, setTerraceNumbers] = useState('');
+  const [interiorCount, setInteriorCount] = useState('0');
+  const [terraceCount, setTerraceCount] = useState('0');
+  const [qrCodes, setQrCodes] = useState<Record<number, string>>({});
+  const [origin, setOrigin] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { toasts, pushToast, removeToast } = useAppToasts();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setOrigin(window.location.origin);
+    }
+  }, []);
 
   useEffect(() => {
     fetch('/api/tables')
@@ -44,26 +45,167 @@ const AdminTablesPage = () => {
       })
       .then(data => {
         setTables(data.tables);
-        setInteriorNumbers(formatNumbers(data.interiorNumbers));
-        setTerraceNumbers(formatNumbers(data.terraceNumbers));
+        setInteriorCount(String(data.interiorCount));
+        setTerraceCount(String(data.terraceCount));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (!origin || tables.length === 0) {
+      setQrCodes({});
+      return;
+    }
+
+    let cancelled = false;
+
+    Promise.all(
+      tables.map(async table => {
+        const qrDataUrl = await QRCode.toDataURL(getCustomerTableUrl(origin, table.id), {
+          width: 220,
+          margin: 1,
+        });
+
+        return [table.id, qrDataUrl] as const;
+      }),
+    )
+      .then(entries => {
+        if (cancelled) {
+          return;
+        }
+
+        setQrCodes(Object.fromEntries(entries));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          pushToast({ message: 'No se pudieron generar algunos códigos QR.', title: 'Mesas', variant: 'error' });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [origin, pushToast, tables]);
+
+  const handleCopyQrLink = async (tableId: number) => {
+    if (!origin) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(getCustomerTableUrl(origin, tableId));
+      pushToast({ message: `Enlace de la mesa ${tableId} copiado.`, title: 'QR de mesa', variant: 'success' });
+    } catch {
+      pushToast({ message: 'No se pudo copiar el enlace de la mesa.', title: 'QR de mesa', variant: 'error' });
+    }
+  };
+
+  const handlePrintAllQrs = () => {
+    window.print();
+  };
+
+  const handlePrintSingleQr = (table: DiningTable) => {
+    const qrCode = qrCodes[table.id];
+    if (!qrCode || !origin) {
+      pushToast({ message: 'El QR todavía no está listo para imprimirse.', title: 'QR de mesa', variant: 'error' });
+      return;
+    }
+
+    const printWindow = window.open('', '_blank', 'width=420,height=640');
+    if (!printWindow) {
+      pushToast({ message: 'No se pudo abrir la ventana de impresión.', title: 'QR de mesa', variant: 'error' });
+      return;
+    }
+
+    const label = table.area === 'TERRACE' ? 'Terraza' : 'Interior';
+    const customerUrl = getCustomerTableUrl(origin, table.id);
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>QR Mesa ${table.number}</title>
+          <style>
+            body {
+              margin: 0;
+              font-family: "Segoe UI", sans-serif;
+              color: #0f172a;
+              background: #ffffff;
+            }
+            .sheet {
+              min-height: 100vh;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              padding: 24px;
+            }
+            .card {
+              width: 100%;
+              max-width: 320px;
+              border: 2px solid #0f172a;
+              border-radius: 18px;
+              padding: 24px;
+              text-align: center;
+            }
+            h1 {
+              margin: 0 0 8px;
+              font-size: 28px;
+            }
+            p {
+              margin: 0 0 14px;
+              font-size: 14px;
+              color: #475569;
+            }
+            img {
+              width: 100%;
+              max-width: 220px;
+              height: auto;
+              display: block;
+              margin: 18px auto;
+            }
+            .link {
+              word-break: break-all;
+              font-size: 11px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="sheet">
+            <div class="card">
+              <h1>Mesa ${table.number}</h1>
+              <p>${label}</p>
+              <img src="${qrCode}" alt="QR Mesa ${table.number}" />
+              <p>Escanea para hacer tu pedido</p>
+              <p class="link">${customerUrl}</p>
+            </div>
+          </div>
+          <script>
+            window.onload = function () {
+              window.print();
+              window.onafterprint = function () { window.close(); };
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSaving(true);
 
-    const nextInteriorNumbers = parseNumbers(interiorNumbers);
-    const nextTerraceNumbers = parseNumbers(terraceNumbers);
+    const nextInteriorCount = Number(interiorCount);
+    const nextTerraceCount = Number(terraceCount);
 
     if (
-      !isValidNumbers(nextInteriorNumbers) ||
-      !isValidNumbers(nextTerraceNumbers) ||
-      nextInteriorNumbers.length + nextTerraceNumbers.length === 0
+      !Number.isInteger(nextInteriorCount) ||
+      !Number.isInteger(nextTerraceCount) ||
+      nextInteriorCount < 0 ||
+      nextTerraceCount < 0 ||
+      nextInteriorCount + nextTerraceCount === 0
     ) {
-      alert('Introduce números únicos y válidos. Puedes separarlos por comas, espacios o saltos de línea.');
+      pushToast({ message: 'Introduce una cantidad válida para interior y terraza. Al menos una zona debe tener mesas.', title: 'Mesas', variant: 'error' });
       setSaving(false);
       return;
     }
@@ -73,8 +215,8 @@ const AdminTablesPage = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          interiorNumbers: nextInteriorNumbers,
-          terraceNumbers: nextTerraceNumbers,
+          interiorCount: nextInteriorCount,
+          terraceCount: nextTerraceCount,
         }),
       });
 
@@ -84,10 +226,11 @@ const AdminTablesPage = () => {
 
       const data = (await response.json()) as TablesResponse;
       setTables(data.tables);
-      setInteriorNumbers(formatNumbers(data.interiorNumbers));
-      setTerraceNumbers(formatNumbers(data.terraceNumbers));
+      setInteriorCount(String(data.interiorCount));
+      setTerraceCount(String(data.terraceCount));
+      pushToast({ message: 'Configuración guardada correctamente.', title: 'Mesas', variant: 'success' });
     } catch {
-      alert('Error al guardar la configuración de mesas');
+      pushToast({ message: 'Error al guardar la configuración de mesas.', title: 'Mesas', variant: 'error' });
     } finally {
       setSaving(false);
     }
@@ -96,28 +239,34 @@ const AdminTablesPage = () => {
   return (
     <div className="admin-tables-page">
       <h1>Configuración de Mesas</h1>
-      <p className="page-subtitle">Escribe los números de mesa manualmente para interior y terraza. Cada zona puede tener numeración distinta.</p>
+      <p className="page-subtitle">Indica cuántas mesas quieres en interior y cuántas en terraza. El sistema las creará automáticamente de la 1 a la cantidad elegida en cada zona.</p>
 
       <form className="form-card" onSubmit={handleSubmit}>
-        <div className="form-field">
-          <label>Números de Interior</label>
-          <textarea
-            value={interiorNumbers}
-            onChange={event => setInteriorNumbers(event.target.value)}
-            placeholder="Ejemplo: 1, 2, 4, 8"
-            rows={4}
-          />
-          <p className="form-help-text">Puedes separar por comas, espacios o saltos de línea.</p>
-        </div>
-        <div className="form-field">
-          <label>Números de Terraza</label>
-          <textarea
-            value={terraceNumbers}
-            onChange={event => setTerraceNumbers(event.target.value)}
-            placeholder="Ejemplo: 101, 102, 201"
-            rows={4}
-          />
-          <p className="form-help-text">La numeración de terraza puede ser totalmente distinta a interior.</p>
+        <div className="product-form-grid">
+          <div className="form-field">
+            <label>Mesas de Interior</label>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={interiorCount}
+              onChange={event => setInteriorCount(event.target.value)}
+              placeholder="0"
+            />
+            <p className="form-help-text">Se crearán las mesas 1 a {interiorCount || '0'} en interior.</p>
+          </div>
+          <div className="form-field">
+            <label>Mesas de Terraza</label>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={terraceCount}
+              onChange={event => setTerraceCount(event.target.value)}
+              placeholder="0"
+            />
+            <p className="form-help-text">Se crearán las mesas 1 a {terraceCount || '0'} en terraza.</p>
+          </div>
         </div>
         <div className="form-actions">
           <button className="btn-primary" type="submit" disabled={saving}>
@@ -129,7 +278,14 @@ const AdminTablesPage = () => {
       <section className="tables-preview-section">
         <div className="tables-preview-header">
           <h2>Mesas Actuales</h2>
-          {!loading && <span>{tables.length} mesas</span>}
+          <div className="tables-preview-toolbar no-print">
+            {!loading && <span>{tables.length} mesas</span>}
+            {!loading && tables.length > 0 && (
+              <button className="btn-secondary" type="button" onClick={handlePrintAllQrs}>
+                Imprimir todos los QR
+              </button>
+            )}
+          </div>
         </div>
         {loading ? (
           <p>Cargando mesas...</p>
@@ -152,12 +308,28 @@ const AdminTablesPage = () => {
                 <div key={table.id} className={`table-preview-card table-preview-card--${table.area.toLowerCase()}`}>
                   <strong>Mesa {table.number}</strong>
                   <span>{table.area === 'TERRACE' ? 'Terraza' : 'Interior'}</span>
+                  <div className="table-qr-preview">
+                    {qrCodes[table.id] ? <img src={qrCodes[table.id]} alt={`QR de la mesa ${table.number}`} /> : <span>Generando QR...</span>}
+                  </div>
+                  <div className="table-preview-actions">
+                    <a className="btn-secondary" href={origin ? getCustomerTableUrl(origin, table.id) : '#'} target="_blank" rel="noreferrer">
+                      Abrir enlace cliente
+                    </a>
+                    <button className="btn-secondary" type="button" onClick={() => handlePrintSingleQr(table)}>
+                      Imprimir QR
+                    </button>
+                    <button className="btn-ghost" type="button" onClick={() => handleCopyQrLink(table.id)}>
+                      Copiar enlace QR
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           </>
         )}
       </section>
+
+      <AppToastStack toasts={toasts} onClose={removeToast} />
     </div>
   );
 };

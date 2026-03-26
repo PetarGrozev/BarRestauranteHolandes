@@ -40,6 +40,7 @@ enum OrderTarget {
 model Order {
   id         Int         @id @default(autoincrement())
   tableId    Int?
+  tableSession Int       @default(1)
   orderItems OrderItem[]
   status     OrderStatus
   table       DiningTable? @relation(fields: [tableId], references: [id], onDelete: SetNull)
@@ -68,13 +69,20 @@ model OrderItem {
 }
 
 model DiningTable {
-  id        Int       @id @default(autoincrement())
-  number    Int
-  area      TableArea
-  isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  orders    Order[]
+  id                  Int       @id @default(autoincrement())
+  number              Int
+  area                TableArea
+  isActive            Boolean   @default(true)
+  isOpen              Boolean   @default(false)
+  currentSession      Int       @default(1)
+  openedAt            DateTime?
+  lastClosedAt        DateTime?
+  lastClosedTotal     Float?
+  lastClosedOrderCount Int?
+  lastClosedItemCount Int?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  orders              Order[]
 
   @@unique([number, area])
 }

@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import type { ProductCategory } from '@prisma/client';
 import { db } from '../../../lib/db';
+import { isValidProductImageValue } from '../../../src/lib/productImages';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const id = Number(req.query.id);
@@ -25,6 +26,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (!name || !Number.isFinite(Number(price)) || !['FOOD', 'DRINK'].includes(normalizedCategory)) {
       return res.status(400).json({ error: 'Invalid product data' });
+    }
+
+    if (image && !isValidProductImageValue(String(image))) {
+      return res.status(400).json({ error: 'Invalid product image' });
     }
 
     try {
