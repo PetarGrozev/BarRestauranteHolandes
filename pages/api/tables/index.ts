@@ -10,16 +10,18 @@ function summarizeTables(tables: Awaited<ReturnType<typeof getTables>>) {
   };
 }
 
-function normalizeNumbers(value: unknown) {
-  if (!Array.isArray(value)) {
+function normalizeCount(value: unknown) {
+  const count = Number(value);
+
+  if (!Number.isInteger(count) || count < 0) {
     return null;
   }
 
-  const numbers = value.map(item => Number(item));
-  const uniqueNumbers = new Set(numbers);
-  const isValid = numbers.every(number => Number.isInteger(number) && number > 0) && uniqueNumbers.size === numbers.length;
+  return count;
+}
 
-  return isValid ? numbers.sort((left, right) => left - right) : null;
+function buildTableNumbers(count: number) {
+  return Array.from({ length: count }, (_, index) => index + 1);
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -34,18 +36,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'POST') {
-    const interiorNumbers = normalizeNumbers(req.body?.interiorNumbers);
-    const terraceNumbers = normalizeNumbers(req.body?.terraceNumbers);
+    const interiorCount = normalizeCount(req.body?.interiorCount);
+    const terraceCount = normalizeCount(req.body?.terraceCount);
 
     if (
-      !interiorNumbers ||
-      !terraceNumbers ||
-      interiorNumbers.length + terraceNumbers.length === 0
+      interiorCount === null ||
+      terraceCount === null ||
+      interiorCount + terraceCount === 0
     ) {
       return res.status(400).json({ error: 'Invalid table configuration' });
     }
 
     try {
+      const interiorNumbers = buildTableNumbers(interiorCount);
+      const terraceNumbers = buildTableNumbers(terraceCount);
       const tables = await configureTables(interiorNumbers, terraceNumbers);
       return res.status(200).json({ tables, ...summarizeTables(tables) });
     } catch (error) {

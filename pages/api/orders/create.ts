@@ -45,6 +45,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(201).json(newOrder);
   } catch (error) {
     console.error('create order error', error);
+
+    if (error instanceof Error && error.message === 'TABLE_CLOSED') {
+      return res.status(409).json({ message: 'La mesa está cerrada. Ábrela antes de crear nuevos pedidos.' });
+    }
+
     return res.status(500).json({ message: 'Error creating order' });
   }
 }

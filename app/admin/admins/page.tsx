@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import AppToastStack from '@/components/AppToast';
+import useAppToasts from '@/hooks/useAppToasts';
 import type { Admin } from '@/types';
 
 const AdminsPage = () => {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(true);
+  const { toasts, pushToast, removeToast } = useAppToasts();
 
   const fetchAdmins = async () => {
     try {
@@ -34,8 +37,9 @@ const AdminsPage = () => {
       const newAdmin = await res.json();
       setAdmins(prev => [...prev, newAdmin]);
       setEmail('');
+      pushToast({ message: 'Administrador añadido correctamente.', title: 'Administradores', variant: 'success' });
     } catch {
-      alert('Error al añadir administrador');
+      pushToast({ message: 'Error al añadir administrador.', title: 'Administradores', variant: 'error' });
     }
   };
 
@@ -48,8 +52,9 @@ const AdminsPage = () => {
       });
       if (!res.ok) throw new Error('Failed');
       setAdmins(prev => prev.filter(a => a.id !== adminId));
+      pushToast({ message: 'Administrador eliminado correctamente.', title: 'Administradores', variant: 'success' });
     } catch {
-      alert('Error al eliminar administrador');
+      pushToast({ message: 'Error al eliminar administrador.', title: 'Administradores', variant: 'error' });
     }
   };
 
@@ -78,6 +83,8 @@ const AdminsPage = () => {
           ))}
         </ul>
       )}
+
+      <AppToastStack toasts={toasts} onClose={removeToast} />
     </div>
   );
 };

@@ -7,6 +7,7 @@ interface OrderTileProps {
   order: Order;
   onStatusUpdate?: (orderId: number, newStatus: OrderStatus) => void;
   nextStatusOverride?: OrderStatus | null;
+  onDeleteRequest?: (order: Order) => void;
 }
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
@@ -34,7 +35,7 @@ const AREA_LABELS: Record<TableArea, string> = {
   TERRACE: 'Terraza',
 };
 
-const OrderTile: React.FC<OrderTileProps> = ({ order, onStatusUpdate, nextStatusOverride }) => {
+const OrderTile: React.FC<OrderTileProps> = ({ order, onStatusUpdate, nextStatusOverride, onDeleteRequest }) => {
   const total = order.orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const nextStatus = nextStatusOverride ?? NEXT_STATUS[order.status] ?? null;
 
@@ -74,6 +75,14 @@ const OrderTile: React.FC<OrderTileProps> = ({ order, onStatusUpdate, nextStatus
           onClick={() => onStatusUpdate(order.id, nextStatus)}
         >
           Marcar como {STATUS_LABELS[nextStatus]}
+        </button>
+      )}
+      {onDeleteRequest && (
+        <button
+          className="btn-ghost order-tile-action order-tile-action--danger"
+          onClick={() => onDeleteRequest(order)}
+        >
+          Eliminar pedido
         </button>
       )}
     </div>

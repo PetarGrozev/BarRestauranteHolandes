@@ -8,7 +8,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const orders = await getOrders();
+    const tableId = Number(req.query.tableId);
+    const scopedTableId = Number.isInteger(tableId) && tableId > 0 ? tableId : undefined;
+    const orders = await getOrders(scopedTableId);
     return res.status(200).json(orders);
   } catch (error) {
     console.error('orders fetch error', error);

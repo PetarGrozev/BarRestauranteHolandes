@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import AppToastStack from '@/components/AppToast';
+import useAppToasts from '@/hooks/useAppToasts';
 import type { DiningTable, TableArea } from '@/types';
 
 const TABLE_AREA_LABELS: Record<TableArea, string> = {
@@ -13,7 +15,9 @@ const TablesPage = () => {
   const router = useRouter();
   const [tables, setTables] = useState<DiningTable[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openingTableId, setOpeningTableId] = useState<number | null>(null);
   const [activeTableArea, setActiveTableArea] = useState<TableArea>('INTERIOR');
+  const { toasts, pushToast, removeToast } = useAppToasts();
 
   useEffect(() => {
     fetch('/api/tables')
@@ -44,6 +48,38 @@ const TablesPage = () => {
   const visibleTables = useMemo(() => {
     return tables.filter(table => table.area === activeTableArea);
   }, [activeTableArea, tables]);
+
+  const handleSelectTable = async (table: DiningTable) => {
+    if (table.isOpen) {
+      router.push(`/order?tableId=${table.id}`);
+      return;
+    }
+
+    setOpeningTableId(table.id);
+
+    try {
+      const response = await fetch(`/api/tables/${table.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reopen' }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reopen table');
+      }
+
+      const data = await response.json();
+      if (data.table) {
+        setTables(prev => prev.map(item => (item.id === data.table.id ? data.table : item)));
+      }
+
+      router.push(`/order?tableId=${table.id}`);
+    } catch {
+      pushToast({ message: 'No se pudo abrir la mesa.', title: 'Mesa', variant: 'error' });
+    } finally {
+      setOpeningTableId(null);
+    }
+  };
 
   return (
     <div className="tables-page">
@@ -84,18 +120,36 @@ const TablesPage = () => {
               {visibleTables.map(table => (
                 <button
                   key={table.id}
-                  className="table-button table-button--selector"
+                  className={`table-button table-button--selector${table.isOpen ? ' table-button--open' : ' table-button--closed'}`}
                   type="button"
-                  onClick={() => router.push(`/order?tableId=${table.id}`)}
+                  onClick={() => handleSelectTable(table)}
+                  disabled={openingTableId === table.id}
                 >
-                  <span className="table-button-title">Mesa {table.number}</span>
+                  <span className="table-button-title-row">
+                    <span className="table-button-title">Mesa {table.number}</span>
+                    <span className={`table-status-badge${table.isOpen ? ' table-status-badge--open' : ' table-status-badge--closed'}`}>
+                      {table.isOpen ? 'Abierta' : 'Libre'}
+                    </span>
+                  </span>
                   <span className="table-button-meta">{TABLE_AREA_LABELS[table.area]}</span>
+                  <span className="table-button-summary">
+                    {table.isOpen
+                      ? `${table.currentOrderCount ?? 0} pedidos · ${Number(table.currentTotal ?? 0).toFixed(2)} €`
+                      : table.lastClosedTotal != null
+                        ? `Último cierre · ${Number(table.lastClosedTotal).toFixed(2)} €`
+                        : 'Sin servicio abierto'}
+                  </span>
+                  <span className="table-button-cta">
+                    {openingTableId === table.id ? 'Abriendo...' : table.isOpen ? 'Entrar en la mesa' : 'Abrir para nuevos clientes'}
+                  </span>
                 </button>
               ))}
             </div>
           </>
         )}
       </section>
+
+      <AppToastStack toasts={toasts} onClose={removeToast} />
     </div>
   );
 };
