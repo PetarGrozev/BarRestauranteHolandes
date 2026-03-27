@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import AppToastStack from '@/components/AppToast';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -48,11 +48,13 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
   const [lastCheckoutSummary, setLastCheckoutSummary] = useState<TableCheckoutSummary | null>(null);
   const [orderPendingDeletion, setOrderPendingDeletion] = useState<(typeof orders)[number] | null>(null);
   const [deletingOrder, setDeletingOrder] = useState(false);
+  const [expiredOrderAlertQueue, setExpiredOrderAlertQueue] = useState<number[]>([]);
   const [activeSection, setActiveSection] = useState<ProductSection>('DRINKS');
   const [search, setSearch] = useState('');
   const deferredSearch = useDeferredValue(search);
   const { toasts, pushToast, removeToast } = useAppToasts();
   const hasTableContext = initialTableId !== null;
+  const notifiedExpiredOrdersRef = useRef<Set<number>>(new Set());
 
   const loadTables = async () => {
     const response = await fetch('/api/tables');
@@ -113,6 +115,49 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
       0,
     );
   }, [selectedTableOrders]);
+
+  const activeExpiredOrderAlert = useMemo(() => {
+    const nextOrderId = expiredOrderAlertQueue[0];
+    if (!nextOrderId) {
+      return null;
+    }
+
+    return selectedTableOrders.find(order => order.id === nextOrderId && order.status !== 'DELIVERED') ?? null;
+  }, [expiredOrderAlertQueue, selectedTableOrders]);
+
+  useEffect(() => {
+    if (!isCustomerMode) {
+      return;
+    }
+
+    setExpiredOrderAlertQueue(prev => prev.filter(orderId => selectedTableOrders.some(order => order.id === orderId && order.status !== 'DELIVERED')));
+  }, [isCustomerMode, selectedTableOrders]);
+
+  useEffect(() => {
+    if (!isCustomerMode) {
+      return;
+    }
+
+    const now = Date.now();
+
+    for (const order of selectedTableOrders) {
+      if (order.status === 'DELIVERED') {
+        continue;
+      }
+
+      const createdAt = new Date(order.createdAt).getTime();
+      const isExpired = now - createdAt >= 10 * 60 * 1000;
+
+      if (isExpired && !notifiedExpiredOrdersRef.current.has(order.id)) {
+        notifiedExpiredOrdersRef.current.add(order.id);
+        setExpiredOrderAlertQueue(prev => [...prev, order.id]);
+      }
+    }
+  }, [isCustomerMode, selectedTableOrders]);
+
+  const handleDismissExpiredOrderAlert = () => {
+    setExpiredOrderAlertQueue(prev => prev.slice(1));
+  };
 
   const addToCart = (product: Product) => {
     if (!initialTableId || !selectedTable?.isOpen) {
@@ -380,6 +425,24 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
         </ConfirmDialog>
       )}
 
+      {activeExpiredOrderAlert && isCustomerMode && (
+        <ConfirmDialog
+          open={Boolean(activeExpiredOrderAlert)}
+          title="Pedido sin entregar"
+          message={`El pedido #${activeExpiredOrderAlert.id} ya ha superado los 10 minutos y sigue sin entregarse.`}
+          confirmLabel="Entendido"
+          cancelLabel="Cerrar"
+          confirmVariant="danger"
+          onConfirm={handleDismissExpiredOrderAlert}
+          onCancel={handleDismissExpiredOrderAlert}
+        >
+          <div className="confirm-dialog-summary">
+            <strong>{activeExpiredOrderAlert.status === 'PREPARING' ? 'Sigue en preparación' : activeExpiredOrderAlert.status === 'READY' ? 'Está listo pero no entregado' : 'Sigue pendiente'}</strong>
+            <span>La alerta solo desaparece cuando la cierres o cuando el pedido pase a entregado.</span>
+          </div>
+        </ConfirmDialog>
+      )}
+
       <AppToastStack toasts={toasts} onClose={removeToast} />
 
       {hasTableContext && (
@@ -490,6 +553,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
                 key={order.id}
                 order={order}
                 onDeleteRequest={selectedTable && !isCustomerMode ? setOrderPendingDeletion : undefined}
+                showDeliveryTimer={Boolean(selectedTable) && isCustomerMode}
               />
             ))}
           </div>

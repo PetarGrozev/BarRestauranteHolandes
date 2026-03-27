@@ -8,9 +8,10 @@ const POLL_INTERVAL = 5000;
 
 type UseOrdersOptions = {
   tableId?: number | null;
+  pollIntervalMs?: number;
 };
 
-const useOrders = ({ tableId }: UseOrdersOptions = {}) => {
+const useOrders = ({ tableId, pollIntervalMs = POLL_INTERVAL }: UseOrdersOptions = {}) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -31,11 +32,11 @@ const useOrders = ({ tableId }: UseOrdersOptions = {}) => {
 
   useEffect(() => {
     fetchOrders();
-    intervalRef.current = setInterval(fetchOrders, POLL_INTERVAL);
+    intervalRef.current = setInterval(fetchOrders, pollIntervalMs);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [fetchOrders]);
+  }, [fetchOrders, pollIntervalMs]);
 
   const createOrder = useCallback(async (tableId: number, items: { productId: number; quantity: number; price: number }[]) => {
     const res = await fetch(`${API_BASE}/create`, {

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import AdminOrderAlerts from '@/components/AdminOrderAlerts';
 import '../src/styles/globals.css';
 
 export const metadata = {
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
     return (
         <html lang="en">
             <body className="app-body">
+                <AdminOrderAlerts />
                 <div className="shell">
                     <header className="shell-header">
                         <div className="shell-brand">

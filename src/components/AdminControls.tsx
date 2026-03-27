@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 const AdminControls: React.FC = () => {
   const router = useRouter();
 
-  const handleExportCSV = async () => {
-    window.open('/api/orders/export', '_blank');
+  const handleExportCSV = (period: 'daily' | 'weekly' | 'monthly') => {
+    window.open(`/api/orders/export?period=${period}`, '_blank');
   };
 
   return (
@@ -29,9 +29,20 @@ const AdminControls: React.FC = () => {
           <h3>Mesas</h3>
           <p>Configura interior y terraza</p>
         </div>
-        <div className="admin-card" onClick={handleExportCSV}>
+        <div className="admin-card admin-card--export">
           <h3>Exportar CSV</h3>
-          <p>Descarga los pedidos en CSV</p>
+          <p>Descarga ventas agrupadas por producto en diario, semanal o mensual.</p>
+          <div className="admin-export-actions">
+            <button className="btn-secondary" type="button" onClick={() => handleExportCSV('daily')}>
+              Diario
+            </button>
+            <button className="btn-secondary" type="button" onClick={() => handleExportCSV('weekly')}>
+              Semanal
+            </button>
+            <button className="btn-secondary" type="button" onClick={() => handleExportCSV('monthly')}>
+              Mensual
+            </button>
+          </div>
         </div>
       </div>
     </div>
