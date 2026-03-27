@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { ORDER_ALERT_DELAY_MS } from '@/lib/orderTimers';
 import type { Order } from '@/types';
 
-const ORDER_ALERT_DELAY_MS = 10 * 60 * 1000;
 const ADMIN_ALERT_POLL_MS = 1000;
 
 function isInternalAlertRoute(pathname: string | null) {
@@ -27,11 +27,17 @@ const AdminOrderAlerts = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [alertQueue, setAlertQueue] = useState<number[]>([]);
   const notifiedOrderIdsRef = useRef<Set<number>>(new Set());
+  const hasPrimedCurrentRouteRef = useRef(false);
+  const hasFetchedCurrentRouteRef = useRef(false);
 
   useEffect(() => {
     if (!isInternalAlertRoute(pathname)) {
       return;
     }
+
+    hasPrimedCurrentRouteRef.current = false;
+    hasFetchedCurrentRouteRef.current = false;
+    setOrders([]);
 
     let cancelled = false;
 
@@ -44,6 +50,7 @@ const AdminOrderAlerts = () => {
 
         const data = (await response.json()) as Order[];
         if (!cancelled) {
+          hasFetchedCurrentRouteRef.current = true;
           setOrders(data);
         }
       } catch {
@@ -71,11 +78,37 @@ const AdminOrderAlerts = () => {
 
   useEffect(() => {
     if (!isInternalAlertRoute(pathname)) {
+      notifiedOrderIdsRef.current.clear();
+      hasPrimedCurrentRouteRef.current = false;
+      hasFetchedCurrentRouteRef.current = false;
       setAlertQueue([]);
       return;
     }
 
+    if (!hasFetchedCurrentRouteRef.current) {
+      return;
+    }
+
+    const activeOrderIds = new Set(orders.filter(order => order.status !== 'DELIVERED').map(order => order.id));
+    notifiedOrderIdsRef.current = new Set(
+      Array.from(notifiedOrderIdsRef.current).filter(orderId => activeOrderIds.has(orderId)),
+    );
+
     setAlertQueue(prev => prev.filter(orderId => orders.some(order => order.id === orderId && order.status !== 'DELIVERED')));
+
+    if (!hasPrimedCurrentRouteRef.current) {
+      const expiredOrderIds = orders
+        .filter(order => order.status !== 'DELIVERED')
+        .filter(order => Date.now() - new Date(order.createdAt).getTime() >= ORDER_ALERT_DELAY_MS)
+        .map(order => order.id);
+
+      notifiedOrderIdsRef.current = new Set([
+        ...Array.from(notifiedOrderIdsRef.current),
+        ...expiredOrderIds,
+      ]);
+      hasPrimedCurrentRouteRef.current = true;
+      return;
+    }
 
     for (const order of orders) {
       if (order.status === 'DELIVERED') {
@@ -86,14 +119,6 @@ const AdminOrderAlerts = () => {
       const isExpired = Date.now() - createdAt >= ORDER_ALERT_DELAY_MS;
 
       if (isExpired && !notifiedOrderIdsRef.current.has(order.id)) {
-        console.log('[AdminOrderAlerts] Pedido vencido detectado', {
-          orderId: order.id,
-          status: order.status,
-          tableId: order.tableId ?? null,
-          createdAt: order.createdAt,
-          elapsedMs: Date.now() - createdAt,
-          thresholdMs: ORDER_ALERT_DELAY_MS,
-        });
         notifiedOrderIdsRef.current.add(order.id);
         setAlertQueue(prev => [...prev, order.id]);
       }

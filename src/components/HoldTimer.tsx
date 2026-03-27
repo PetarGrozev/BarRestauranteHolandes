@@ -2,6 +2,7 @@
 
 import React from 'react';
 import useHoldTimer from '@/hooks/useHoldTimer';
+import { ORDER_ALERT_DELAY_SECONDS } from '@/lib/orderTimers';
 
 type HoldTimerProps = {
   startedAt: string;
@@ -12,7 +13,7 @@ const HoldTimer: React.FC<HoldTimerProps> = ({ startedAt, isCompleted = false })
   const { formattedTime, isExpired } = useHoldTimer({
     startedAt,
     isCompleted,
-    limitInSeconds: 600,
+    limitInSeconds: ORDER_ALERT_DELAY_SECONDS,
   });
 
   return (

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { ORDER_ALERT_DELAY_SECONDS } from '@/lib/orderTimers';
 
 type UseHoldTimerOptions = {
     startedAt: string;
@@ -20,7 +21,7 @@ function formatTime(seconds: number) {
     return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
 }
 
-const useHoldTimer = ({ startedAt, isCompleted = false, limitInSeconds = 600 }: UseHoldTimerOptions) => {
+const useHoldTimer = ({ startedAt, isCompleted = false, limitInSeconds = ORDER_ALERT_DELAY_SECONDS }: UseHoldTimerOptions) => {
     const [timeLeft, setTimeLeft] = useState(() => (isCompleted ? 0 : getRemainingSeconds(startedAt, limitInSeconds)));
 
     useEffect(() => {
