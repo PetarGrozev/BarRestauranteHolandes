@@ -146,7 +146,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
       }
 
       const createdAt = new Date(order.createdAt).getTime();
-      const isExpired = now - createdAt >= 10 * 1000;
+      const isExpired = now - createdAt >= 10 * 60 * 1000;
 
       if (isExpired && !notifiedExpiredOrdersRef.current.has(order.id)) {
         notifiedExpiredOrdersRef.current.add(order.id);
@@ -429,7 +429,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
         <ConfirmDialog
           open={Boolean(activeExpiredOrderAlert)}
           title="Pedido sin entregar"
-          message={`El pedido #${activeExpiredOrderAlert.id} ya ha superado los 10 segundos y sigue sin entregarse.`}
+          message={`El pedido #${activeExpiredOrderAlert.id} ya ha superado los 10 minutos y sigue sin entregarse.`}
           confirmLabel="Entendido"
           cancelLabel="Cerrar"
           confirmVariant="danger"

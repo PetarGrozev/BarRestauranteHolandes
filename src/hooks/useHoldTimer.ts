@@ -20,7 +20,7 @@ function formatTime(seconds: number) {
     return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
 }
 
-const useHoldTimer = ({ startedAt, isCompleted = false, limitInSeconds = 10 }: UseHoldTimerOptions) => {
+const useHoldTimer = ({ startedAt, isCompleted = false, limitInSeconds = 600 }: UseHoldTimerOptions) => {
     const [timeLeft, setTimeLeft] = useState(() => (isCompleted ? 0 : getRemainingSeconds(startedAt, limitInSeconds)));
 
     useEffect(() => {
