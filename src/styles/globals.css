@@ -308,6 +308,42 @@ a:hover {
     margin-bottom: 8px;
 }
 
+.product-card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.product-card-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.product-card-badge--stock {
+    background: #ecfccb;
+    color: #3f6212;
+}
+
+.product-card-badge--out {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.product-card-badge--enabled {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.product-card-badge--disabled {
+    background: #e5e7eb;
+    color: #4b5563;
+}
+
 .product-card-meta {
     display: flex;
     justify-content: space-between;
@@ -331,12 +367,14 @@ a:hover {
 .product-card-actions {
     padding: 10px 14px;
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     border-top: 1px solid #f1f5f9;
 }
 
 .product-card-actions button {
     flex: 1;
+    min-width: 120px;
 }
 
 /* ─── Orders Grid & Tiles ─── */
@@ -1310,6 +1348,7 @@ a:hover {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 16px;
     margin-top: 16px;
+    align-items: stretch;
 }
 
 .admin-card {
@@ -1318,6 +1357,11 @@ a:hover {
     padding: 20px;
     border: 1px solid rgba(148, 163, 184, 0.35);
     cursor: pointer;
+    min-height: 184px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
     transition: box-shadow 0.15s, border-color 0.15s;
 }
 
@@ -1327,13 +1371,21 @@ a:hover {
 }
 
 .admin-card h3 {
-    font-size: 15px;
+    font-size: 18px;
+    line-height: 1.2;
     margin-bottom: 4px;
 }
 
 .admin-card p {
-    font-size: 13px;
+    font-size: 14px;
+    line-height: 1.55;
     color: #6b7280;
+}
+
+.admin-card-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .admin-card--export {
@@ -1344,11 +1396,46 @@ a:hover {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
-    margin-top: 16px;
+    margin-top: auto;
 }
 
 .admin-export-actions .btn-secondary {
     width: 100%;
+    min-height: 46px;
+    padding-inline: 10px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+@media (max-width: 1024px) {
+    .admin-controls-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-card {
+        min-height: 200px;
+    }
+
+    .admin-card h3 {
+        font-size: 17px;
+    }
+
+    .admin-card p {
+        font-size: 13px;
+    }
+
+    .admin-export-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-export-actions .btn-secondary {
+        min-height: 48px;
+        font-size: 13px;
+    }
+
+    .admin-export-actions .btn-secondary:last-child {
+        grid-column: 1 / -1;
+    }
 }
 
 .tables-preview-section {
@@ -1569,6 +1656,22 @@ a:hover {
 
     .admin-export-actions {
         grid-template-columns: 1fr;
+    }
+
+    .admin-card {
+        min-height: auto;
+    }
+
+    .admin-card h3 {
+        font-size: 16px;
+    }
+
+    .admin-card p {
+        font-size: 13px;
+    }
+
+    .admin-export-actions .btn-secondary {
+        font-size: 14px;
     }
 
     .order-page-header,

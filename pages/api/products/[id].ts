@@ -3,6 +3,19 @@ import type { ProductCategory } from '@prisma/client';
 import { db } from '../../../lib/db';
 import { isValidProductImageValue } from '../../../src/lib/productImages';
 
+function normalizeStock(value: unknown) {
+  const stock = Number(value);
+  return Number.isInteger(stock) && stock >= 0 ? stock : null;
+}
+
+function normalizeEnabled(value: unknown) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  return null;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const id = Number(req.query.id);
   if (!id) {
@@ -21,10 +34,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'PATCH') {
-    const { name, description, price, image, orderDestination, category } = req.body;
+    const { name, description, price, image, orderDestination, category, stock, isEnabled } = req.body;
     const normalizedCategory = String(category).toUpperCase() as ProductCategory;
+    const normalizedStock = normalizeStock(stock);
+    const normalizedEnabled = normalizeEnabled(isEnabled);
 
-    if (!name || !Number.isFinite(Number(price)) || !['FOOD', 'DRINK'].includes(normalizedCategory)) {
+    if (!name || !Number.isFinite(Number(price)) || normalizedStock === null || normalizedEnabled === null || !['FOOD', 'DRINK'].includes(normalizedCategory)) {
       return res.status(400).json({ error: 'Invalid product data' });
     }
 
@@ -39,6 +54,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           name,
           description: description || null,
           price: Number(price),
+          stock: normalizedStock,
+          isEnabled: normalizedEnabled,
           imageUrl: image || null,
           category: normalizedCategory,
           orderTarget: orderDestination?.toUpperCase() ?? 'BOTH',

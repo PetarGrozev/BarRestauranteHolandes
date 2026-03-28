@@ -38,13 +38,16 @@ const useOrders = ({ tableId, pollIntervalMs = POLL_INTERVAL }: UseOrdersOptions
     };
   }, [fetchOrders, pollIntervalMs]);
 
-  const createOrder = useCallback(async (tableId: number, items: { productId: number; quantity: number; price: number }[]) => {
+  const createOrder = useCallback(async (tableId: number, items: { productId: number; quantity: number }[]) => {
     const res = await fetch(`${API_BASE}/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tableId, items }),
     });
-    if (!res.ok) throw new Error('Failed to create order');
+    if (!res.ok) {
+      const payload = await res.json().catch(() => null);
+      throw new Error(payload?.message ?? 'Failed to create order');
+    }
     const newOrder = await res.json();
     setOrders(prev => [newOrder, ...prev]);
     return newOrder;

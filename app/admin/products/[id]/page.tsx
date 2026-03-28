@@ -17,10 +17,12 @@ const EditProductPage = () => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
+  const [stock, setStock] = useState('0');
   const [imageUrl, setImageUrl] = useState('');
   const [imageName, setImageName] = useState('');
   const [category, setCategory] = useState<ProductCategory>('FOOD');
   const [orderTarget, setOrderTarget] = useState('KITCHEN');
+  const [isEnabled, setIsEnabled] = useState(true);
   const { toasts, pushToast, removeToast } = useAppToasts();
 
   useEffect(() => {
@@ -34,10 +36,12 @@ const EditProductPage = () => {
         setName(data.name);
         setDescription(data.description || '');
         setPrice(String(data.price));
+        setStock(String(data.stock ?? 0));
         setImageUrl(data.imageUrl || '');
         setImageName('');
         setCategory(data.category);
         setOrderTarget(data.orderTarget);
+        setIsEnabled(Boolean(data.isEnabled));
       })
       .catch(() => pushToast({ message: 'Producto no encontrado.', title: 'Producto', variant: 'error' }))
       .finally(() => setLoading(false));
@@ -85,16 +89,25 @@ const EditProductPage = () => {
           name,
           description: description || undefined,
           price: parseFloat(price),
+          stock: Number(stock),
+          isEnabled,
           image: imageUrl || undefined,
           category,
           orderDestination: orderTarget.toLowerCase(),
         }),
       });
-      if (!res.ok) throw new Error('Failed');
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.error ?? 'Failed');
+      }
       pushToast({ message: 'Producto actualizado correctamente.', title: 'Producto', variant: 'success' });
       router.push('/admin/products');
-    } catch {
-      pushToast({ message: 'Error al actualizar producto.', title: 'Producto', variant: 'error' });
+    } catch (error) {
+      pushToast({
+        message: error instanceof Error && error.message !== 'Failed' ? error.message : 'Error al actualizar producto.',
+        title: 'Producto',
+        variant: 'error',
+      });
     } finally {
       setSubmitting(false);
     }
@@ -124,6 +137,11 @@ const EditProductPage = () => {
               <input type="number" step="0.01" min="0" value={price} onChange={e => setPrice(e.target.value)} required placeholder="0.00" />
             </div>
             <div className="form-field">
+              <label>Stock disponible</label>
+              <input type="number" step="1" min="0" value={stock} onChange={e => setStock(e.target.value)} required placeholder="0" />
+              <p className="form-help-text">Si el stock es 0, el producto no se podrá pedir hasta reponerlo.</p>
+            </div>
+            <div className="form-field">
               <label>Imagen del Producto</label>
               <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={handleImageSelection} />
               <p className="form-help-text">Selecciona la foto desde tu móvil, tablet u ordenador. Máximo 2 MB.</p>
@@ -149,6 +167,13 @@ const EditProductPage = () => {
                 <option value="BOTH">Ambos</option>
               </select>
             </div>
+            <div className="form-field">
+              <label>Estado del producto</label>
+              <select value={isEnabled ? 'enabled' : 'disabled'} onChange={e => setIsEnabled(e.target.value === 'enabled')}>
+                <option value="enabled">Habilitado</option>
+                <option value="disabled">Deshabilitado</option>
+              </select>
+            </div>
           </div>
           <div className="form-actions product-form-actions">
             <button className="btn-primary" type="submit" disabled={submitting}>
@@ -170,6 +195,10 @@ const EditProductPage = () => {
               <span className="product-preview-badge product-preview-badge--muted">
                 {orderTarget === 'KITCHEN' ? 'Cocina' : orderTarget === 'STAFF' ? 'Sala' : 'Ambos'}
               </span>
+              <span className="product-preview-badge product-preview-badge--muted">
+                {Number(stock) > 0 ? `Stock ${Number(stock)}` : 'Sin stock'}
+              </span>
+              <span className="product-preview-badge product-preview-badge--muted">{isEnabled ? 'Habilitado' : 'Deshabilitado'}</span>
             </div>
             <h2>{name || 'Nombre del producto'}</h2>
             <p>{description || 'La descripción aparecerá aquí para comprobar de un vistazo cómo se leerá en la tarjeta.'}</p>

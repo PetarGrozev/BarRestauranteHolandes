@@ -15,6 +15,10 @@ export function isValidRemoteImageUrl(value: string) {
   }
 }
 
+export function isValidLocalImagePath(value: string) {
+  return /^\/(?!\/)/.test(value);
+}
+
 export function isValidProductImageValue(value: string) {
   if (!value) {
     return true;
@@ -24,7 +28,7 @@ export function isValidProductImageValue(value: string) {
     return value.length <= MAX_PRODUCT_IMAGE_BYTES * 1.5 && /^data:image\/(jpeg|jpg|png|webp|gif);base64,/i.test(value);
   }
 
-  return isValidRemoteImageUrl(value);
+  return isValidRemoteImageUrl(value) || isValidLocalImagePath(value);
 }
 
 export async function fileToProductImageDataUrl(file: File) {

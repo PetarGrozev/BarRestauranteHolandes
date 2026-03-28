@@ -30,8 +30,10 @@ const AdminControls: React.FC = () => {
           <p>Configura interior y terraza</p>
         </div>
         <div className="admin-card admin-card--export">
-          <h3>Exportar CSV</h3>
-          <p>Descarga ventas agrupadas por producto en diario, semanal o mensual.</p>
+          <div className="admin-card-copy">
+            <h3>Exportar CSV</h3>
+            <p>Descarga ventas agrupadas por producto en diario, semanal o mensual.</p>
+          </div>
           <div className="admin-export-actions">
             <button className="btn-secondary" type="button" onClick={() => handleExportCSV('daily')}>
               Diario

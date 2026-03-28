@@ -22,12 +22,18 @@ export function getKitchenNextStatus(order: Order): OrderStatus | null {
     return null;
   }
 
+  const requiresStaffHandoff = needsStaff(order);
+
   if (order.status === 'RECEIVED') {
     return 'PREPARING';
   }
 
   if (order.status === 'PREPARING') {
-    return 'READY';
+    return requiresStaffHandoff ? 'READY' : 'DELIVERED';
+  }
+
+  if (order.status === 'READY' && !requiresStaffHandoff) {
+    return 'DELIVERED';
   }
 
   return null;

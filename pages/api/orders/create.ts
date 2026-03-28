@@ -7,11 +7,10 @@ function normalizeItems(items: unknown) {
   }
 
   const normalized = items.map((item) => {
-    const payload = item as { productId?: unknown; quantity?: unknown; price?: unknown };
+    const payload = item as { productId?: unknown; quantity?: unknown };
     return {
       productId: Number(payload.productId),
       quantity: Number(payload.quantity),
-      price: Number(payload.price),
     };
   });
 
@@ -20,9 +19,7 @@ function normalizeItems(items: unknown) {
       Number.isInteger(item.productId) &&
       item.productId > 0 &&
       Number.isInteger(item.quantity) &&
-      item.quantity > 0 &&
-      Number.isFinite(item.price) &&
-      item.price >= 0,
+      item.quantity > 0,
   );
 
   return isValid ? normalized : null;
@@ -48,6 +45,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (error instanceof Error && error.message === 'TABLE_CLOSED') {
       return res.status(409).json({ message: 'La mesa está cerrada. Ábrela antes de crear nuevos pedidos.' });
+    }
+
+    if (error instanceof Error && error.message === 'PRODUCT_NOT_FOUND') {
+      return res.status(404).json({ message: 'Uno de los productos ya no existe.' });
+    }
+
+    if (error instanceof Error && error.message.startsWith('PRODUCT_DISABLED:')) {
+      const [, productName] = error.message.split(':');
+      return res.status(409).json({ message: `${productName} está deshabilitado y no se puede pedir ahora.` });
+    }
+
+    if (error instanceof Error && error.message.startsWith('OUT_OF_STOCK:')) {
+      const [, productName] = error.message.split(':');
+      return res.status(409).json({ message: `${productName} se ha quedado sin stock.` });
     }
 
     return res.status(500).json({ message: 'Error creating order' });

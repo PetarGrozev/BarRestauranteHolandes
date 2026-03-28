@@ -27,6 +27,8 @@ export interface Product {
   name: string;
   description?: string | null;
   price: number;
+  stock: number;
+  isEnabled: boolean;
   imageUrl?: string | null;
   category: ProductCategory;
   orderTarget: OrderTarget;

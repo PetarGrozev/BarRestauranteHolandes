@@ -57,6 +57,16 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
   const hasTableContext = initialTableId !== null;
   const notifiedExpiredOrdersRef = useRef<Set<number>>(new Set());
 
+  const loadProducts = async () => {
+    const response = await fetch('/api/products');
+    if (!response.ok) {
+      throw new Error('Failed to load products');
+    }
+
+    const data = (await response.json()) as Product[];
+    setProducts(data);
+  };
+
   const loadTables = async () => {
     const response = await fetch('/api/tables');
     if (!response.ok) {
@@ -69,10 +79,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
   };
 
   useEffect(() => {
-    fetch('/api/products')
-      .then(r => r.json())
-      .then(setProducts)
-      .catch(() => {});
+    loadProducts().catch(() => {});
 
     loadTables().catch(() => {});
   }, []);
@@ -81,15 +88,19 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
     return tables.find(table => table.id === initialTableId) ?? null;
   }, [initialTableId, tables]);
 
+  const availableProducts = useMemo(() => {
+    return products.filter(product => product.isEnabled && product.stock > 0);
+  }, [products]);
+
   const groupedProducts = useMemo(() => {
-    return products.reduce(
+    return availableProducts.reduce(
       (acc, product) => {
         acc[getProductSection(product)].push(product);
         return acc;
       },
       { DRINKS: [] as Product[], FOOD: [] as Product[] },
     );
-  }, [products]);
+  }, [availableProducts]);
 
   const visibleProducts = useMemo(() => {
     return groupedProducts[activeSection].filter(product => productMatchesSearch(product, deferredSearch));
@@ -140,6 +151,24 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
   }, [isCustomerMode, selectedTableOrders]);
 
   useEffect(() => {
+    setCart(prev =>
+      prev.flatMap(item => {
+        const currentProduct = products.find(product => product.id === item.productId);
+
+        if (!currentProduct || !currentProduct.isEnabled || currentProduct.stock <= 0) {
+          return [];
+        }
+
+        return [{
+          ...item,
+          product: currentProduct,
+          quantity: Math.min(item.quantity, currentProduct.stock),
+        }];
+      }),
+    );
+  }, [products]);
+
+  useEffect(() => {
     if (!isCustomerMode) {
       return;
     }
@@ -170,16 +199,29 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
       return;
     }
 
+    const currentProduct = products.find(item => item.id === product.id);
+
+    if (!currentProduct || !currentProduct.isEnabled || currentProduct.stock <= 0) {
+      pushToast({ message: `${product.name} no está disponible ahora mismo.`, title: 'Producto', variant: 'error' });
+      return;
+    }
+
     setCart(prev => {
       const existing = prev.find(item => item.productId === product.id);
       if (existing) {
+        if (existing.quantity >= currentProduct.stock) {
+          pushToast({ message: `No queda más stock de ${product.name}.`, title: 'Stock', variant: 'error' });
+          return prev;
+        }
+
         return prev.map(item =>
           item.productId === product.id
             ? { ...item, quantity: item.quantity + 1 }
             : item,
         );
       }
-      return [...prev, { productId: product.id, product, quantity: 1 }];
+
+      return [...prev, { productId: product.id, product: currentProduct, quantity: 1 }];
     });
   };
 
@@ -210,15 +252,16 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
         cart.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
-          price: item.product.price,
         })),
       );
       setCart([]);
       setLastCheckoutSummary(null);
-      await Promise.all([refreshOrders(), loadTables()]);
+      await Promise.all([refreshOrders(), loadTables(), loadProducts()]);
       pushToast({ message: 'Pedido enviado correctamente a la mesa.', title: 'Pedido', variant: 'success' });
-    } catch {
-      pushToast({ message: 'No se pudo crear el pedido.', title: 'Pedido', variant: 'error' });
+    } catch (error) {
+      await loadProducts().catch(() => {});
+      const message = error instanceof Error ? error.message : 'No se pudo crear el pedido.';
+      pushToast({ message, title: 'Pedido', variant: 'error' });
     } finally {
       setSubmitting(false);
     }
