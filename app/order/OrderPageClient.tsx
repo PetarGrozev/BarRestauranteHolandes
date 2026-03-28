@@ -8,6 +8,7 @@ import useAppToasts from '@/hooks/useAppToasts';
 import useOrders from '@/hooks/useOrders';
 import OrderTile from '@/components/OrderTile';
 import ProductCard from '@/components/ProductCard';
+import { ORDER_ALERT_DELAY_MS } from '@/lib/orderTimers';
 import type { Product, CartItem, DiningTable, TableArea, TableCheckoutSummary } from '@/types';
 import { getProductSection, productMatchesSearch, type ProductSection } from '@/lib/productCategories';
 
@@ -130,6 +131,11 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
       return;
     }
 
+    const activeOrderIds = new Set(selectedTableOrders.filter(order => order.status !== 'DELIVERED').map(order => order.id));
+    notifiedExpiredOrdersRef.current = new Set(
+      Array.from(notifiedExpiredOrdersRef.current).filter(orderId => activeOrderIds.has(orderId)),
+    );
+
     setExpiredOrderAlertQueue(prev => prev.filter(orderId => selectedTableOrders.some(order => order.id === orderId && order.status !== 'DELIVERED')));
   }, [isCustomerMode, selectedTableOrders]);
 
@@ -146,7 +152,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
       }
 
       const createdAt = new Date(order.createdAt).getTime();
-      const isExpired = now - createdAt >= 10 * 60 * 1000;
+      const isExpired = now - createdAt >= ORDER_ALERT_DELAY_MS;
 
       if (isExpired && !notifiedExpiredOrdersRef.current.has(order.id)) {
         notifiedExpiredOrdersRef.current.add(order.id);
