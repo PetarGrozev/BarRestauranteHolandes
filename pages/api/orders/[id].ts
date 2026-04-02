@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { getAdminSessionFromApiRequest } from '../../../lib/auth';
 import { deleteOrder } from '../../../lib/db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -13,6 +14,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
+  if (!getAdminSessionFromApiRequest(req)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   try {
     const order = await deleteOrder(orderId);
     return res.status(200).json({ order });
@@ -21,6 +26,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (error instanceof Error && error.message === 'ORDER_NOT_FOUND') {
       return res.status(404).json({ error: 'Order not found' });
+    }
+
+    if (error instanceof Error && error.message === 'ORDER_ALREADY_DELIVERED') {
+      return res.status(409).json({ error: 'No puedes borrar un pedido ya entregado.' });
+    }
+
+    if (error instanceof Error && error.message === 'ORDER_TABLE_CLOSED') {
+      return res.status(409).json({ error: 'No puedes borrar pedidos de una mesa cerrada.' });
     }
 
     return res.status(500).json({ error: 'Failed to delete order' });

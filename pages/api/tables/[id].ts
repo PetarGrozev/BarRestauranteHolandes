@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { getAdminSessionFromApiRequest, isCustomerTableRequestAllowed } from '../../../lib/auth';
 import { closeTableSession, getTableById, reopenTableSession } from '../../../lib/db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -9,6 +10,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'GET') {
+    if (!getAdminSessionFromApiRequest(req) && !isCustomerTableRequestAllowed(req, tableId)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
     try {
       const table = await getTableById(tableId);
 
@@ -25,14 +30,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'POST') {
     const action = String(req.body?.action ?? '').toLowerCase();
+    const adminSession = getAdminSessionFromApiRequest(req);
 
     try {
       if (action === 'close') {
+        if (!adminSession) {
+          return res.status(401).json({ error: 'Unauthorized' });
+        }
+
         const result = await closeTableSession(tableId);
         return res.status(200).json(result);
       }
 
       if (action === 'reopen') {
+        if (!adminSession && !isCustomerTableRequestAllowed(req, tableId)) {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
+
         const table = await reopenTableSession(tableId);
         return res.status(200).json({ table });
       }

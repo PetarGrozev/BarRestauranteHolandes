@@ -38,7 +38,7 @@ const useOrders = ({ tableId, pollIntervalMs = POLL_INTERVAL }: UseOrdersOptions
     };
   }, [fetchOrders, pollIntervalMs]);
 
-  const createOrder = useCallback(async (tableId: number, items: { productId: number; quantity: number }[]) => {
+  const createOrder = useCallback(async (tableId: number, items: { productId: number; quantity: number; note?: string | null }[]) => {
     const res = await fetch(`${API_BASE}/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -69,7 +69,10 @@ const useOrders = ({ tableId, pollIntervalMs = POLL_INTERVAL }: UseOrdersOptions
     const res = await fetch(`${API_BASE}/${orderId}`, {
       method: 'DELETE',
     });
-    if (!res.ok) throw new Error('Failed to delete order');
+    if (!res.ok) {
+      const payload = await res.json().catch(() => null);
+      throw new Error(payload?.error ?? payload?.message ?? 'Failed to delete order');
+    }
     const payload = await res.json();
     setOrders(prev => prev.filter(order => order.id !== orderId));
     return payload.order as Order;

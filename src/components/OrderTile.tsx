@@ -10,6 +10,7 @@ interface OrderTileProps {
   nextStatusOverride?: OrderStatus | null;
   onDeleteRequest?: (order: Order) => void;
   showDeliveryTimer?: boolean;
+  variant?: 'default' | 'kitchen' | 'staff';
 }
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
@@ -37,39 +38,72 @@ const AREA_LABELS: Record<TableArea, string> = {
   TERRACE: 'Terraza',
 };
 
-const OrderTile: React.FC<OrderTileProps> = ({ order, onStatusUpdate, nextStatusOverride, onDeleteRequest, showDeliveryTimer = false }) => {
+const OrderTile: React.FC<OrderTileProps> = ({ order, onStatusUpdate, nextStatusOverride, onDeleteRequest, showDeliveryTimer = false, variant = 'default' }) => {
   const total = order.orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const itemCount = order.orderItems.reduce((sum, item) => sum + item.quantity, 0);
   const nextStatus = nextStatusOverride ?? NEXT_STATUS[order.status] ?? null;
+  const isKitchenVariant = variant === 'kitchen';
+  const createdAtLabel = new Date(order.createdAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div className="order-tile">
+    <div className={`order-tile order-tile--${variant}`}>
       <div className="order-tile-header">
-        <div>
+        <div className="order-tile-heading">
           <h3>Pedido #{order.id}</h3>
           {order.table && (
             <p className="order-table-label">Mesa {order.table.number} · {AREA_LABELS[order.table.area]}</p>
           )}
         </div>
-        <span
-          className="order-status-badge"
-          style={{ backgroundColor: STATUS_COLORS[order.status] }}
-        >
-          {STATUS_LABELS[order.status]}
-        </span>
+        {isKitchenVariant ? (
+          <div className="order-tile-kitchen-meta">
+            <span className="order-tile-time order-tile-time--kitchen-meta">
+              {createdAtLabel}
+            </span>
+            <span
+              className="order-status-badge order-status-badge--kitchen"
+              style={{ backgroundColor: STATUS_COLORS[order.status] }}
+            >
+              {STATUS_LABELS[order.status]}
+            </span>
+          </div>
+        ) : (
+          <div className="order-tile-meta">
+            <span className="order-tile-time order-tile-time--meta">{createdAtLabel}</span>
+            <span
+              className="order-status-badge"
+              style={{ backgroundColor: STATUS_COLORS[order.status] }}
+            >
+              {STATUS_LABELS[order.status]}
+            </span>
+          </div>
+        )}
       </div>
       <ul className="order-tile-items">
         {order.orderItems.map((item) => (
-          <li key={item.id}>
-            {item.product?.name ?? `Producto #${item.productId}`} &times; {item.quantity}{' '}
-            <span className="order-tile-price">&euro;{(item.price * item.quantity).toFixed(2)}</span>
+          <li key={item.id} className={isKitchenVariant ? 'order-tile-item order-tile-item--kitchen' : 'order-tile-item'}>
+            <div className="order-tile-item-row">
+              {isKitchenVariant ? (
+                <>
+                  <span className="order-tile-quantity">{item.quantity}</span>
+                  <span className="order-tile-item-name">{item.product?.name ?? `Producto #${item.productId}`}</span>
+                </>
+              ) : (
+                <div className="order-tile-item-copy">
+                  <span className="order-tile-item-name-inline">{item.product?.name ?? `Producto #${item.productId}`}</span>
+                  <span className="order-tile-item-quantity-inline">x{item.quantity}</span>
+                </div>
+              )}
+              {!isKitchenVariant && <span className="order-tile-price">&euro;{(item.price * item.quantity).toFixed(2)}</span>}
+            </div>
+            {item.note && <p className="order-tile-note">{isKitchenVariant ? item.note : `Nota: ${item.note}`}</p>}
           </li>
         ))}
       </ul>
-      <div className="order-tile-footer">
-        <strong>Total: &euro;{total.toFixed(2)}</strong>
-        <span className="order-tile-time">
-          {new Date(order.createdAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-        </span>
+      <div className={`order-tile-footer${isKitchenVariant ? ' order-tile-footer--kitchen' : ''}`}>
+        <strong>{isKitchenVariant ? `${itemCount} ${itemCount === 1 ? 'articulo' : 'articulos'}` : `Total: ${total.toFixed(2)}`}</strong>
+        {!isKitchenVariant && (
+          <span className="order-tile-footer-meta">{itemCount} {itemCount === 1 ? 'articulo' : 'articulos'}</span>
+        )}
       </div>
       {showDeliveryTimer && (
         <HoldTimer startedAt={order.createdAt} isCompleted={order.status === 'DELIVERED'} />

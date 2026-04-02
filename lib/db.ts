@@ -6,7 +6,10 @@ export const db = prisma;
 type RequestedOrderItem = {
   productId: number;
   quantity: number;
+  note?: string | null;
 };
+
+const ORDER_ITEM_NOTE_MAX_LENGTH = 280;
 
 type TableWithOrders = Prisma.DiningTableGetPayload<{
   include: {
@@ -129,16 +132,26 @@ export async function getProducts() {
 }
 
 function mergeRequestedOrderItems(items: RequestedOrderItem[]) {
-  const quantitiesByProductId = new Map<number, number>();
+  const itemsByKey = new Map<string, RequestedOrderItem>();
 
   for (const item of items) {
-    quantitiesByProductId.set(item.productId, (quantitiesByProductId.get(item.productId) ?? 0) + item.quantity);
+    const normalizedNote = typeof item.note === 'string' ? item.note.trim().slice(0, ORDER_ITEM_NOTE_MAX_LENGTH) : null;
+    const key = `${item.productId}::${normalizedNote ?? ''}`;
+    const existing = itemsByKey.get(key);
+
+    if (existing) {
+      existing.quantity += item.quantity;
+      continue;
+    }
+
+    itemsByKey.set(key, {
+      productId: item.productId,
+      quantity: item.quantity,
+      note: normalizedNote,
+    });
   }
 
-  return Array.from(quantitiesByProductId.entries()).map(([productId, quantity]) => ({
-    productId,
-    quantity,
-  }));
+  return Array.from(itemsByKey.values());
 }
 
 export async function getTables() {
@@ -306,6 +319,7 @@ export async function createOrder(tableId: number, items: RequestedOrderItem[]) 
             productId: item.productId,
             quantity: item.quantity,
             price: productsById.get(item.productId)?.price ?? 0,
+            note: item.note ?? null,
           })),
         },
       },
@@ -425,6 +439,14 @@ export async function deleteOrder(orderId: number) {
 
     if (!order) {
       throw new Error('ORDER_NOT_FOUND');
+    }
+
+    if (order.status === 'DELIVERED') {
+      throw new Error('ORDER_ALREADY_DELIVERED');
+    }
+
+    if (order.table && (!order.table.isOpen || order.table.currentSession !== order.tableSession)) {
+      throw new Error('ORDER_TABLE_CLOSED');
     }
 
     for (const item of order.orderItems) {

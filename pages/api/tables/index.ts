@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { CUSTOMER_TABLE_COOKIE, getAdminSessionFromApiRequest } from '../../../lib/auth';
 import { configureTables, getTables } from '../../../lib/db';
 
 function summarizeTables(tables: Awaited<ReturnType<typeof getTables>>) {
@@ -28,7 +29,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'GET') {
     try {
       const tables = await getTables();
-      return res.status(200).json({ tables, ...summarizeTables(tables) });
+      const adminSession = getAdminSessionFromApiRequest(req);
+      const customerTableId = Number(req.cookies[CUSTOMER_TABLE_COOKIE]);
+      const scopedTables = !adminSession && Number.isInteger(customerTableId) && customerTableId > 0
+        ? tables.filter(table => table.id === customerTableId)
+        : tables;
+
+      return res.status(200).json({ tables: scopedTables, ...summarizeTables(scopedTables) });
     } catch (error) {
       console.error('tables fetch error', error);
       return res.status(500).json({ error: 'Failed to fetch tables' });
@@ -36,6 +43,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'POST') {
+    if (!getAdminSessionFromApiRequest(req)) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     const interiorCount = normalizeCount(req.body?.interiorCount);
     const terraceCount = normalizeCount(req.body?.terraceCount);
 

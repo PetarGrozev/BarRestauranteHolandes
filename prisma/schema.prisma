@@ -26,6 +26,7 @@ model Product {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   orderItems  OrderItem[]
+  menuOptions MenuCourseProduct[]
 }
 
 enum ProductCategory {
@@ -63,11 +64,51 @@ model OrderItem {
   productId Int
   quantity  Int
   price     Float
+  note      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   order     Order   @relation(fields: [orderId], references: [id])
   product   Product @relation(fields: [productId], references: [id])
+}
+
+model Menu {
+  id          Int          @id @default(autoincrement())
+  name        String
+  description String?
+  isActive    Boolean      @default(true)
+  courses     MenuCourse[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model MenuCourse {
+  id         Int                 @id @default(autoincrement())
+  menuId      Int
+  courseType MenuCourseType
+  label      String
+  sortOrder  Int                 @default(0)
+  menu       Menu                @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  products   MenuCourseProduct[]
+
+  @@unique([menuId, courseType])
+}
+
+model MenuCourseProduct {
+  id        Int        @id @default(autoincrement())
+  courseId  Int
+  productId Int
+  course    MenuCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  product   Product    @relation(fields: [productId], references: [id])
+
+  @@unique([courseId, productId])
+}
+
+enum MenuCourseType {
+  STARTER
+  MAIN
+  DESSERT
+  DRINK
 }
 
 model DiningTable {

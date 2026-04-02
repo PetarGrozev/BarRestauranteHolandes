@@ -91,7 +91,6 @@ const TablesPage = () => {
       <section className="table-selector-card">
         <div className="order-section-header">
           <h2>Mesas disponibles</h2>
-          <span className="order-section-count">Paso 1 de 2</span>
         </div>
 
         {loading ? (

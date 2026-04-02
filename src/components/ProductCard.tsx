@@ -6,6 +6,7 @@ import type { Product } from '../types';
 interface ProductCardProps {
   product: Product;
   onOrder?: (product: Product) => void;
+  onPreview?: (product: Product) => void;
   onEdit?: (product: Product) => void;
   onDelete?: (productId: number) => void;
   onToggleEnabled?: (product: Product) => void;
@@ -19,13 +20,64 @@ const TARGET_LABELS: Record<string, string> = {
   BOTH: 'Ambos',
 };
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onOrder, onEdit, onDelete, onToggleEnabled, mode = 'order', disabled = false }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onOrder, onPreview, onEdit, onDelete, onToggleEnabled, mode = 'order', disabled = false }) => {
   if (mode === 'order' && onOrder) {
+    const hasImage = Boolean(product.imageUrl);
+
+    if (onPreview) {
+      return (
+        <article className="product-pick-card">
+          <button
+            className={`product-pick-preview-zone${hasImage ? ' product-pick-preview-zone--image' : ''}`}
+            type="button"
+            onClick={() => onPreview(product)}
+            disabled={disabled}
+          >
+            {hasImage && (
+              <>
+                <span className="product-pick-media" aria-hidden="true" style={{ backgroundImage: `url(${product.imageUrl})` }} />
+                <span className="product-pick-scrim" aria-hidden="true" />
+              </>
+            )}
+
+            <span className="product-pick-content">
+              <span className="product-pick-name">{product.name}</span>
+              {product.description && <span className="product-pick-desc">{product.description}</span>}
+            </span>
+          </button>
+
+          <div className="product-pick-action-bar">
+            <span className="product-pick-price">&euro;{product.price.toFixed(2)}</span>
+            <button className="product-pick-add-button" type="button" onClick={() => onOrder(product)} disabled={disabled}>
+              Añadir
+            </button>
+          </div>
+        </article>
+      );
+    }
+
     return (
-      <button className="product-pick-button" type="button" onClick={() => onOrder(product)} disabled={disabled}>
-        <span className="product-pick-name">{product.name}</span>
-        {product.description && <span className="product-pick-desc">{product.description}</span>}
-        <span className="product-pick-price">&euro;{product.price.toFixed(2)}</span>
+      <button
+        className={`product-pick-button${hasImage ? ' product-pick-button--image' : ''}`}
+        type="button"
+        onClick={() => onOrder(product)}
+        disabled={disabled}
+      >
+        {hasImage && (
+          <>
+            <span className="product-pick-media" aria-hidden="true" style={{ backgroundImage: `url(${product.imageUrl})` }} />
+            <span className="product-pick-scrim" aria-hidden="true" />
+          </>
+        )}
+
+        <span className="product-pick-content">
+          <span className="product-pick-name">{product.name}</span>
+          {product.description && <span className="product-pick-desc">{product.description}</span>}
+        </span>
+
+        <span className="product-pick-footer">
+          <span className="product-pick-price">&euro;{product.price.toFixed(2)}</span>
+        </span>
       </button>
     );
   }

@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { getAdminSessionFromApiRequest, isCustomerTableRequestAllowed } from '../../../lib/auth';
 import { createOrder } from '../../../lib/db';
 
 function normalizeItems(items: unknown) {
@@ -7,10 +8,13 @@ function normalizeItems(items: unknown) {
   }
 
   const normalized = items.map((item) => {
-    const payload = item as { productId?: unknown; quantity?: unknown };
+    const payload = item as { productId?: unknown; quantity?: unknown; note?: unknown };
+    const note = typeof payload.note === 'string' ? payload.note.trim() : '';
+
     return {
       productId: Number(payload.productId),
       quantity: Number(payload.quantity),
+      note: note.length > 0 ? note : null,
     };
   });
 
@@ -19,7 +23,8 @@ function normalizeItems(items: unknown) {
       Number.isInteger(item.productId) &&
       item.productId > 0 &&
       Number.isInteger(item.quantity) &&
-      item.quantity > 0,
+      item.quantity > 0 &&
+      (!item.note || item.note.length <= 280),
   );
 
   return isValid ? normalized : null;
@@ -35,6 +40,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (!normalizedItems || !Number.isInteger(tableId) || tableId <= 0) {
     return res.status(400).json({ message: 'Invalid order data' });
+  }
+
+  if (!getAdminSessionFromApiRequest(req) && !isCustomerTableRequestAllowed(req, tableId)) {
+    return res.status(403).json({ message: 'Forbidden' });
   }
 
   try {

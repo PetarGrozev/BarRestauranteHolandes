@@ -2,6 +2,7 @@ export type OrderTarget = 'KITCHEN' | 'STAFF' | 'BOTH';
 export type OrderStatus = 'RECEIVED' | 'PREPARING' | 'READY' | 'DELIVERED';
 export type ProductCategory = 'FOOD' | 'DRINK';
 export type TableArea = 'INTERIOR' | 'TERRACE';
+export type MenuCourseType = 'STARTER' | 'MAIN' | 'DESSERT' | 'DRINK';
 
 export interface TableCheckoutLine {
   productId: number | null;
@@ -36,12 +37,32 @@ export interface Product {
   updatedAt: string;
 }
 
+export interface MenuCourse {
+  id: number;
+  menuId: number;
+  courseType: MenuCourseType;
+  label: string;
+  sortOrder: number;
+  options: Product[];
+}
+
+export interface Menu {
+  id: number;
+  name: string;
+  description?: string | null;
+  isActive: boolean;
+  courses: MenuCourse[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface OrderItem {
   id: number;
   orderId: number;
   productId: number;
   quantity: number;
   price: number;
+  note?: string | null;
   product: Product;
 }
 
@@ -83,7 +104,9 @@ export interface Admin {
 }
 
 export interface CartItem {
+  cartLineId: string;
   productId: number;
   product: Product;
   quantity: number;
+  note?: string | null;
 }

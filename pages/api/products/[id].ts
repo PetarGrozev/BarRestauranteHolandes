@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import type { ProductCategory } from '@prisma/client';
+import { getAdminSessionFromApiRequest } from '../../../lib/auth';
 import { db } from '../../../lib/db';
 import { isValidProductImageValue } from '../../../src/lib/productImages';
 
@@ -34,6 +35,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'PATCH') {
+    if (!getAdminSessionFromApiRequest(req)) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     const { name, description, price, image, orderDestination, category, stock, isEnabled } = req.body;
     const normalizedCategory = String(category).toUpperCase() as ProductCategory;
     const normalizedStock = normalizeStock(stock);
@@ -69,6 +74,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'DELETE') {
+    if (!getAdminSessionFromApiRequest(req)) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     try {
       await db.product.delete({ where: { id } });
       return res.status(204).end();
