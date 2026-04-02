@@ -47,6 +47,10 @@ export function getAdminAccessPassword() {
   return process.env.ADMIN_PASSWORD || '';
 }
 
+export function getBootstrapAdminEmail() {
+  return (process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL || '').trim().toLowerCase();
+}
+
 function signPayload(payload: string) {
   return createHmac('sha256', getAuthSecret()).update(payload).digest('base64url');
 }
