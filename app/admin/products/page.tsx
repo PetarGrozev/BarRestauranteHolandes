@@ -12,6 +12,7 @@ const ProductsPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [productPendingDeletion, setProductPendingDeletion] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState(false);
+  const [togglingProductId, setTogglingProductId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
   const { toasts, pushToast, removeToast } = useAppToasts();
   const router = useRouter();
@@ -71,6 +72,48 @@ const ProductsPage = () => {
     router.push(`/admin/products/${product.id}`);
   };
 
+  const handleToggleEnabled = async (product: Product) => {
+    setTogglingProductId(product.id);
+
+    try {
+      const res = await fetch(`/api/products/${product.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: product.name,
+          description: product.description || undefined,
+          price: product.price,
+          image: product.imageUrl || undefined,
+          category: product.category,
+          stock: product.stock,
+          isEnabled: !product.isEnabled,
+          orderDestination: product.orderTarget.toLowerCase(),
+        }),
+      });
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.error ?? 'Failed');
+      }
+
+      const updatedProduct = (await res.json()) as Product;
+      setProducts(prev => prev.map(item => (item.id === updatedProduct.id ? updatedProduct : item)));
+      pushToast({
+        message: updatedProduct.isEnabled ? 'Producto habilitado correctamente.' : 'Producto deshabilitado correctamente.',
+        title: 'Producto',
+        variant: 'success',
+      });
+    } catch (error) {
+      pushToast({
+        message: error instanceof Error && error.message !== 'Failed' ? error.message : 'No se pudo actualizar el estado del producto.',
+        title: 'Producto',
+        variant: 'error',
+      });
+    } finally {
+      setTogglingProductId(null);
+    }
+  };
+
   return (
     <div className="products-page">
       <div className="page-header">
@@ -94,10 +137,11 @@ const ProductsPage = () => {
         {visibleProducts.map(product => (
           <ProductCard
             key={product.id}
-            product={product}
+            product={togglingProductId === product.id ? { ...product, isEnabled: !product.isEnabled } : product}
             mode="admin"
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onToggleEnabled={handleToggleEnabled}
           />
         ))}
       </div>

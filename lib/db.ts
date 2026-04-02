@@ -3,6 +3,14 @@ import { prisma } from './prisma';
 
 export const db = prisma;
 
+type RequestedOrderItem = {
+  productId: number;
+  quantity: number;
+  note?: string | null;
+};
+
+const ORDER_ITEM_NOTE_MAX_LENGTH = 280;
+
 type TableWithOrders = Prisma.DiningTableGetPayload<{
   include: {
     orders: {
@@ -123,6 +131,29 @@ export async function getProducts() {
   });
 }
 
+function mergeRequestedOrderItems(items: RequestedOrderItem[]) {
+  const itemsByKey = new Map<string, RequestedOrderItem>();
+
+  for (const item of items) {
+    const normalizedNote = typeof item.note === 'string' ? item.note.trim().slice(0, ORDER_ITEM_NOTE_MAX_LENGTH) : null;
+    const key = `${item.productId}::${normalizedNote ?? ''}`;
+    const existing = itemsByKey.get(key);
+
+    if (existing) {
+      existing.quantity += item.quantity;
+      continue;
+    }
+
+    itemsByKey.set(key, {
+      productId: item.productId,
+      quantity: item.quantity,
+      note: normalizedNote,
+    });
+  }
+
+  return Array.from(itemsByKey.values());
+}
+
 export async function getTables() {
   const tables = await db.diningTable.findMany({
     where: { isActive: true },
@@ -184,7 +215,9 @@ export async function configureTables(interiorNumbers: number[], terraceNumbers:
   return getTables();
 }
 
-export async function createOrder(tableId: number, items: { productId: number; quantity: number; price: number }[]) {
+export async function createOrder(tableId: number, items: RequestedOrderItem[]) {
+  const mergedItems = mergeRequestedOrderItems(items);
+
   return db.$transaction(async transaction => {
     const table = await transaction.diningTable.findUnique({
       where: { id: tableId },
@@ -198,6 +231,82 @@ export async function createOrder(tableId: number, items: { productId: number; q
       throw new Error('TABLE_CLOSED');
     }
 
+    const requestedProductIds = mergedItems.map(item => item.productId);
+    const products = await transaction.product.findMany({
+      where: {
+        id: {
+          in: requestedProductIds,
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        stock: true,
+        isEnabled: true,
+      },
+    });
+
+    if (products.length !== mergedItems.length) {
+      throw new Error('PRODUCT_NOT_FOUND');
+    }
+
+    const productsById = new Map(products.map(product => [product.id, product]));
+
+    for (const item of mergedItems) {
+      const product = productsById.get(item.productId);
+
+      if (!product) {
+        throw new Error('PRODUCT_NOT_FOUND');
+      }
+
+      if (!product.isEnabled) {
+        throw new Error(`PRODUCT_DISABLED:${product.name}`);
+      }
+
+      if (product.stock < item.quantity) {
+        throw new Error(`OUT_OF_STOCK:${product.name}`);
+      }
+    }
+
+    for (const item of mergedItems) {
+      const updateResult = await transaction.product.updateMany({
+        where: {
+          id: item.productId,
+          isEnabled: true,
+          stock: {
+            gte: item.quantity,
+          },
+        },
+        data: {
+          stock: {
+            decrement: item.quantity,
+          },
+        },
+      });
+
+      if (updateResult.count !== 1) {
+        const currentProduct = await transaction.product.findUnique({
+          where: { id: item.productId },
+          select: {
+            name: true,
+            stock: true,
+            isEnabled: true,
+          },
+        });
+
+        if (!currentProduct) {
+          throw new Error('PRODUCT_NOT_FOUND');
+        }
+
+        if (!currentProduct.isEnabled) {
+          throw new Error(`PRODUCT_DISABLED:${currentProduct.name}`);
+        }
+
+        throw new Error(`OUT_OF_STOCK:${currentProduct.name}`);
+      }
+    }
+
     return transaction.order.create({
       data: {
         status: 'RECEIVED',
@@ -206,10 +315,11 @@ export async function createOrder(tableId: number, items: { productId: number; q
           connect: { id: tableId },
         },
         orderItems: {
-          create: items.map(item => ({
+          create: mergedItems.map(item => ({
             productId: item.productId,
             quantity: item.quantity,
-            price: item.price,
+            price: productsById.get(item.productId)?.price ?? 0,
+            note: item.note ?? null,
           })),
         },
       },
@@ -329,6 +439,25 @@ export async function deleteOrder(orderId: number) {
 
     if (!order) {
       throw new Error('ORDER_NOT_FOUND');
+    }
+
+    if (order.status === 'DELIVERED') {
+      throw new Error('ORDER_ALREADY_DELIVERED');
+    }
+
+    if (order.table && (!order.table.isOpen || order.table.currentSession !== order.tableSession)) {
+      throw new Error('ORDER_TABLE_CLOSED');
+    }
+
+    for (const item of order.orderItems) {
+      await transaction.product.updateMany({
+        where: { id: item.productId },
+        data: {
+          stock: {
+            increment: item.quantity,
+          },
+        },
+      });
     }
 
     await transaction.orderItem.deleteMany({

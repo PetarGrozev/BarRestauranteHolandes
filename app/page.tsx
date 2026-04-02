@@ -28,7 +28,7 @@ const HomePage = () => {
                 <div className="home-card">
                     <h2>Administración</h2>
                     <p>Gestiona productos, admins y exportes.</p>
-                    <a href="/admin" className="btn-ghost">Panel admin</a>
+                    <a href="/login" className="btn-ghost">Acceso interno</a>
                 </div>
             </div>
         </section>

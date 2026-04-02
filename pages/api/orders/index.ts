@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { getAdminSessionFromApiRequest, isCustomerTableRequestAllowed } from '../../../lib/auth';
 import { getOrders } from '../../../lib/db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -10,6 +11,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const tableId = Number(req.query.tableId);
     const scopedTableId = Number.isInteger(tableId) && tableId > 0 ? tableId : undefined;
+
+    if (!scopedTableId && !getAdminSessionFromApiRequest(req)) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    if (scopedTableId && !getAdminSessionFromApiRequest(req) && !isCustomerTableRequestAllowed(req, scopedTableId)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
     const orders = await getOrders(scopedTableId);
     return res.status(200).json(orders);
   } catch (error) {

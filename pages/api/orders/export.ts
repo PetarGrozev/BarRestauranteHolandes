@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { getAdminSessionFromApiRequest } from '../../../lib/auth';
 import { db } from '../../../lib/db';
 
 type ExportPeriod = 'daily' | 'weekly' | 'monthly';
@@ -52,6 +53,10 @@ function getFilename(period: ExportPeriod, date = new Date()) {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (!getAdminSessionFromApiRequest(req)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   if (req.method !== 'GET') {
     res.setHeader('Allow', ['GET']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);

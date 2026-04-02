@@ -19,6 +19,67 @@ function formatNumbers(numbers: number[]) {
   return numbers.join(', ');
 }
 
+function TableAreaIcon({ area }: { area: DiningTable['area'] }) {
+  if (area === 'TERRACE') {
+    return (
+      <svg aria-hidden="true" className="table-area-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 3v7" />
+        <path d="M8.5 6.5 12 10l3.5-3.5" />
+        <path d="M4 10h16" />
+        <path d="M7 10l1.2 9h7.6L17 10" />
+        <path d="M12 19v2" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg aria-hidden="true" className="table-area-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 21v-8" />
+      <path d="M18 21v-8" />
+      <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h11A2.5 2.5 0 0 1 20 8.5V13H4V8.5Z" />
+      <path d="M4 13h16" />
+    </svg>
+  );
+}
+
+function TableActionIcon({ kind }: { kind: 'open' | 'print' | 'download' | 'copy' }) {
+  if (kind === 'print') {
+    return (
+      <svg aria-hidden="true" className="table-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M7 9V4h10v5" />
+        <path d="M6 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-1" />
+        <path d="M7 14h10v6H7z" />
+      </svg>
+    );
+  }
+
+  if (kind === 'download') {
+    return (
+      <svg aria-hidden="true" className="table-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 3v11" />
+        <path d="m7.5 10.5 4.5 4.5 4.5-4.5" />
+        <path d="M4 20h16" />
+      </svg>
+    );
+  }
+
+  if (kind === 'copy') {
+    return (
+      <svg aria-hidden="true" className="table-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="9" y="9" width="11" height="11" rx="2" />
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg aria-hidden="true" className="table-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 12h16" />
+      <path d="m13 5 7 7-7 7" />
+    </svg>
+  );
+}
+
 const AdminTablesPage = () => {
   const [tables, setTables] = useState<DiningTable[]>([]);
   const [interiorCount, setInteriorCount] = useState('0');
@@ -28,6 +89,17 @@ const AdminTablesPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { toasts, pushToast, removeToast } = useAppToasts();
+
+  const sortedTables = [...tables].sort((left, right) => {
+    if (left.area !== right.area) {
+      return left.area.localeCompare(right.area);
+    }
+
+    return left.number - right.number;
+  });
+
+  const qrReadyCount = sortedTables.filter(table => Boolean(qrCodes[table.id])).length;
+  const openTablesCount = sortedTables.filter(table => table.isOpen).length;
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -191,6 +263,21 @@ const AdminTablesPage = () => {
     printWindow.document.close();
   };
 
+  const handleDownloadSingleQr = (table: DiningTable) => {
+    const qrCode = qrCodes[table.id];
+    if (!qrCode) {
+      pushToast({ message: 'El QR todavia no esta listo para descargarse.', title: 'QR de mesa', variant: 'error' });
+      return;
+    }
+
+    const link = document.createElement('a');
+    link.href = qrCode;
+    link.download = `mesa-${table.number}-${table.area.toLowerCase()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSaving(true);
@@ -282,6 +369,7 @@ const AdminTablesPage = () => {
             {!loading && <span>{tables.length} mesas</span>}
             {!loading && tables.length > 0 && (
               <button className="btn-secondary" type="button" onClick={handlePrintAllQrs}>
+                <TableActionIcon kind="print" />
                 Imprimir todos los QR
               </button>
             )}
@@ -293,6 +381,20 @@ const AdminTablesPage = () => {
           <p className="empty-state">Aún no hay mesas configuradas</p>
         ) : (
           <>
+            <div className="tables-stats-grid">
+              <div className="tables-stat-card">
+                <strong>{sortedTables.length}</strong>
+                <span>Mesas activas en el plano</span>
+              </div>
+              <div className="tables-stat-card">
+                <strong>{openTablesCount}</strong>
+                <span>Mesas abiertas ahora mismo</span>
+              </div>
+              <div className="tables-stat-card">
+                <strong>{qrReadyCount}</strong>
+                <span>QR listos para imprimir o descargar</span>
+              </div>
+            </div>
             <div className="tables-number-summary">
               <div className="tables-number-block">
                 <strong>Interior</strong>
@@ -304,21 +406,46 @@ const AdminTablesPage = () => {
               </div>
             </div>
             <div className="tables-preview-grid">
-              {tables.map(table => (
-                <div key={table.id} className={`table-preview-card table-preview-card--${table.area.toLowerCase()}`}>
-                  <strong>Mesa {table.number}</strong>
-                  <span>{table.area === 'TERRACE' ? 'Terraza' : 'Interior'}</span>
+              {sortedTables.map(table => (
+                <div key={table.id} className={`table-preview-card table-preview-card--${table.area.toLowerCase()}`} data-print-label={`Mesa ${table.number}`}>
+                  <div className="table-preview-card-header">
+                    <div className="table-preview-card-heading">
+                      <span className="table-preview-area-badge">
+                        <TableAreaIcon area={table.area} />
+                        {table.area === 'TERRACE' ? 'Terraza' : 'Interior'}
+                      </span>
+                      <strong>Mesa {table.number}</strong>
+                    </div>
+                    <span className={`table-preview-status table-preview-status--${table.isOpen ? 'open' : 'closed'}`}>
+                      {table.isOpen ? 'Abierta' : 'Libre'}
+                    </span>
+                  </div>
                   <div className="table-qr-preview">
                     {qrCodes[table.id] ? <img src={qrCodes[table.id]} alt={`QR de la mesa ${table.number}`} /> : <span>Generando QR...</span>}
                   </div>
+                  <div className="table-print-copy">
+                    <strong>Escanea y pide</strong>
+                    <span>{table.area === 'TERRACE' ? 'Terraza' : 'Interior'}</span>
+                  </div>
+                  <div className="table-preview-link-block">
+                    <strong>Ruta cliente</strong>
+                    <span>{getCustomerTableUrl(origin || 'https://tu-dominio.com', table.id)}</span>
+                  </div>
                   <div className="table-preview-actions">
                     <a className="btn-secondary" href={origin ? getCustomerTableUrl(origin, table.id) : '#'} target="_blank" rel="noreferrer">
-                      Abrir enlace cliente
+                      <TableActionIcon kind="open" />
+                      Abrir pedido cliente
                     </a>
                     <button className="btn-secondary" type="button" onClick={() => handlePrintSingleQr(table)}>
+                      <TableActionIcon kind="print" />
                       Imprimir QR
                     </button>
+                    <button className="btn-secondary" type="button" onClick={() => handleDownloadSingleQr(table)}>
+                      <TableActionIcon kind="download" />
+                      Descargar PNG
+                    </button>
                     <button className="btn-ghost" type="button" onClick={() => handleCopyQrLink(table.id)}>
+                      <TableActionIcon kind="copy" />
                       Copiar enlace QR
                     </button>
                   </div>
