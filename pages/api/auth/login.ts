@@ -6,6 +6,7 @@ import {
   buildAdminSessionCookie,
   buildExpiredCookie,
   createAdminSessionToken,
+  getBootstrapAdminEmail,
   isAdminPasswordValid,
 } from '../../../lib/auth';
 
@@ -27,7 +28,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const admin = await db.admin.findUnique({ where: { email } });
+    let admin = await db.admin.findUnique({ where: { email } });
+
+    if (!admin) {
+      const bootstrapEmail = getBootstrapAdminEmail();
+
+      if (bootstrapEmail && email === bootstrapEmail) {
+        const adminCount = await db.admin.count();
+
+        if (adminCount === 0 && isAdminPasswordValid(password)) {
+          admin = await db.admin.create({
+            data: { email },
+          });
+        }
+      }
+    }
 
     if (!admin || !isAdminPasswordValid(password)) {
       return res.status(401).json({ message: 'Credenciales incorrectas.' });
