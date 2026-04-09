@@ -1,12 +1,19 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getAdminSessionFromApiRequest } from '../../../lib/auth';
 import { db } from '../../../lib/db';
+import { getRestaurantContextFromRequest } from '../../../lib/restaurant-context';
 import { formatMenu, normalizeMenuPayload } from '../../../src/lib/menuApi';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     try {
+      const context = await getRestaurantContextFromRequest(req);
+      if (!context) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
       const menus = await db.menu.findMany({
+        where: { restaurantId: context.restaurantId },
         include: {
           courses: {
             include: {
@@ -29,7 +36,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'POST') {
-    if (!getAdminSessionFromApiRequest(req)) {
+    const adminSession = getAdminSessionFromApiRequest(req);
+    if (!adminSession) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -39,8 +47,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
+      const productCount = await db.product.count({
+        where: {
+          restaurantId: adminSession.restaurantId,
+          id: {
+            in: payload.courses.flatMap(course => course.productIds),
+          },
+        },
+      });
+
+      const expectedProductCount = new Set(payload.courses.flatMap(course => course.productIds)).size;
+      if (productCount !== expectedProductCount) {
+        return res.status(400).json({ error: 'Menu contains products from another restaurant or missing products.' });
+      }
+
       const menu = await db.menu.create({
         data: {
+          restaurantId: adminSession.restaurantId,
           name: payload.name,
           description: payload.description,
           isActive: payload.isActive,

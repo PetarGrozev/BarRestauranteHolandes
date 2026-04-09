@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getAdminSessionFromApiRequest } from '../../../lib/auth';
+import { getRestaurantContextFromRequest } from '../../../lib/restaurant-context';
 import { updateOrderStatus } from '../../../lib/db';
 
 const VALID_STATUSES = ['RECEIVED', 'PREPARING', 'READY', 'DELIVERED'];
@@ -26,7 +27,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const updatedOrder = await updateOrderStatus(normalizedOrderId, upperStatus);
+    const context = await getRestaurantContextFromRequest(req);
+    if (!context) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const updatedOrder = await updateOrderStatus(context.restaurantId, normalizedOrderId, upperStatus);
     return res.status(200).json(updatedOrder);
   } catch (error) {
     console.error('update status error', error);

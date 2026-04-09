@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "db:push": "npx prisma db push",
+    "db:prepare-multitenant": "npx tsx scripts/prepare-multitenant.ts",
     "db:seed": "npx tsx scripts/seed.ts",
     "db:studio": "npx prisma studio",
     "postinstall": "prisma generate"

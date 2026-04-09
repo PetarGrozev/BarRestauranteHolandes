@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getAdminSessionFromApiRequest, isCustomerTableRequestAllowed } from '../../../lib/auth';
+import { getRestaurantContextFromRequest } from '../../../lib/restaurant-context';
 import { createOrder } from '../../../lib/db';
 
 function normalizeItems(items: unknown) {
@@ -47,7 +48,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const newOrder = await createOrder(tableId, normalizedItems);
+    const context = await getRestaurantContextFromRequest(req);
+    if (!context) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    const newOrder = await createOrder(context.restaurantId, tableId, normalizedItems);
     return res.status(201).json(newOrder);
   } catch (error) {
     console.error('create order error', error);

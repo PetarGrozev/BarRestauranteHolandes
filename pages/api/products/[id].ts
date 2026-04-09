@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import type { ProductCategory } from '@prisma/client';
 import { getAdminSessionFromApiRequest } from '../../../lib/auth';
 import { db } from '../../../lib/db';
+import { getRestaurantContextFromRequest } from '../../../lib/restaurant-context';
 import { isValidProductImageValue } from '../../../src/lib/productImages';
 
 function normalizeStock(value: unknown) {
@@ -25,7 +26,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'GET') {
     try {
-      const product = await db.product.findUnique({ where: { id } });
+      const context = await getRestaurantContextFromRequest(req);
+      if (!context) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const product = await db.product.findFirst({ where: { id, restaurantId: context.restaurantId } });
       if (!product) return res.status(404).json({ error: 'Product not found' });
       return res.status(200).json(product);
     } catch (error) {
@@ -35,7 +41,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'PATCH') {
-    if (!getAdminSessionFromApiRequest(req)) {
+    const adminSession = getAdminSessionFromApiRequest(req);
+    if (!adminSession) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -53,6 +60,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
+      const existingProduct = await db.product.findFirst({ where: { id, restaurantId: adminSession.restaurantId } });
+      if (!existingProduct) {
+        return res.status(404).json({ error: 'Product not found' });
+      }
+
       const product = await db.product.update({
         where: { id },
         data: {
@@ -74,11 +86,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'DELETE') {
-    if (!getAdminSessionFromApiRequest(req)) {
+    const adminSession = getAdminSessionFromApiRequest(req);
+    if (!adminSession) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     try {
+      const existingProduct = await db.product.findFirst({ where: { id, restaurantId: adminSession.restaurantId } });
+      if (!existingProduct) {
+        return res.status(404).json({ error: 'Product not found' });
+      }
+
       await db.product.delete({ where: { id } });
       return res.status(204).end();
     } catch (error) {

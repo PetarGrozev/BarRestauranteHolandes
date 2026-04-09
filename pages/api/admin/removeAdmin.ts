@@ -3,7 +3,8 @@ import { getAdminSessionFromApiRequest } from '../../../lib/auth';
 import { db } from '../../../lib/db';
 
 export default async function removeAdmin(req: NextApiRequest, res: NextApiResponse) {
-    if (!getAdminSessionFromApiRequest(req)) {
+    const adminSession = getAdminSessionFromApiRequest(req);
+    if (!adminSession) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
 
@@ -19,6 +20,11 @@ export default async function removeAdmin(req: NextApiRequest, res: NextApiRespo
     }
 
     try {
+        const targetAdmin = await db.admin.findFirst({ where: { id: adminId, restaurantId: adminSession.restaurantId } });
+        if (!targetAdmin) {
+            return res.status(404).json({ message: 'Administrador no encontrado.' });
+        }
+
         await db.admin.delete({
             where: { id: adminId },
         });

@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { CUSTOMER_TABLE_COOKIE, getAdminSessionFromApiRequest } from '../../../lib/auth';
+import { getRestaurantContextFromRequest } from '../../../lib/restaurant-context';
 import { configureTables, getTables } from '../../../lib/db';
 
 function summarizeTables(tables: Awaited<ReturnType<typeof getTables>>) {
@@ -28,7 +29,12 @@ function buildTableNumbers(count: number) {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     try {
-      const tables = await getTables();
+      const context = await getRestaurantContextFromRequest(req);
+      if (!context) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const tables = await getTables(context.restaurantId);
       const adminSession = getAdminSessionFromApiRequest(req);
       const customerTableId = Number(req.cookies[CUSTOMER_TABLE_COOKIE]);
       const scopedTables = !adminSession && Number.isInteger(customerTableId) && customerTableId > 0
@@ -43,7 +49,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'POST') {
-    if (!getAdminSessionFromApiRequest(req)) {
+    const adminSession = getAdminSessionFromApiRequest(req);
+    if (!adminSession) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -61,7 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const interiorNumbers = buildTableNumbers(interiorCount);
       const terraceNumbers = buildTableNumbers(terraceCount);
-      const tables = await configureTables(interiorNumbers, terraceNumbers);
+      const tables = await configureTables(adminSession.restaurantId, interiorNumbers, terraceNumbers);
       return res.status(200).json({ tables, ...summarizeTables(tables) });
     } catch (error) {
       console.error('tables config error', error);

@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import type { ProductCategory } from '@prisma/client';
 import { getAdminSessionFromApiRequest } from '../../../lib/auth';
 import { db } from '../../../lib/db';
+import { getRestaurantContextFromRequest } from '../../../lib/restaurant-context';
 import { isValidProductImageValue } from '../../../src/lib/productImages';
 
 function normalizeStock(value: unknown) {
@@ -20,7 +21,13 @@ function normalizeEnabled(value: unknown) {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     try {
+      const context = await getRestaurantContextFromRequest(req);
+      if (!context) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
       const products = await db.product.findMany({
+        where: { restaurantId: context.restaurantId },
         orderBy: { createdAt: 'desc' },
       });
       return res.status(200).json(products);
@@ -31,7 +38,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'POST') {
-    if (!getAdminSessionFromApiRequest(req)) {
+    const adminSession = getAdminSessionFromApiRequest(req);
+    if (!adminSession) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -51,6 +59,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const product = await db.product.create({
         data: {
+          restaurantId: adminSession.restaurantId,
           name,
           description: description || null,
           price: Number(price),

@@ -16,9 +16,12 @@ function formatAdminDate(value: string) {
 const AdminsPage = () => {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [removingAdminId, setRemovingAdminId] = useState<number | null>(null);
+  const [resettingAdminId, setResettingAdminId] = useState<number | null>(null);
   const { toasts, pushToast, removeToast } = useAppToasts();
 
   const fetchAdmins = async () => {
@@ -43,7 +46,12 @@ const AdminsPage = () => {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim() || !password.trim() || !confirmPassword.trim()) return;
+
+    if (password !== confirmPassword) {
+      pushToast({ message: 'Las contraseñas no coinciden.', title: 'Administradores', variant: 'error' });
+      return;
+    }
 
     setSubmitting(true);
 
@@ -51,7 +59,7 @@ const AdminsPage = () => {
       const res = await fetch('/api/admin/addAdmin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, password }),
       });
 
       if (!res.ok) {
@@ -62,12 +70,49 @@ const AdminsPage = () => {
       const newAdmin = await res.json();
       setAdmins(prev => [...prev, newAdmin].sort((left, right) => left.email.localeCompare(right.email)));
       setEmail('');
+      setPassword('');
+      setConfirmPassword('');
       pushToast({ message: 'Administrador añadido correctamente.', title: 'Administradores', variant: 'success' });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Error al añadir administrador.';
       pushToast({ message, title: 'Administradores', variant: 'error' });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async (adminId: number, adminEmail: string) => {
+    const nextPassword = window.prompt(`Nueva contraseña para ${adminEmail}`, '');
+
+    if (nextPassword === null) {
+      return;
+    }
+
+    if (!nextPassword.trim()) {
+      pushToast({ message: 'La contraseña no puede estar vacía.', title: 'Administradores', variant: 'error' });
+      return;
+    }
+
+    setResettingAdminId(adminId);
+
+    try {
+      const res = await fetch('/api/admin/addAdmin', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminId, password: nextPassword }),
+      });
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.message ?? 'Failed');
+      }
+
+      pushToast({ message: `Contraseña actualizada para ${adminEmail}.`, title: 'Administradores', variant: 'success' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error al actualizar contraseña.';
+      pushToast({ message, title: 'Administradores', variant: 'error' });
+    } finally {
+      setResettingAdminId(null);
     }
   };
 
@@ -113,7 +158,7 @@ const AdminsPage = () => {
         <section className="admins-panel admins-panel--form">
           <div className="admins-panel-copy">
             <h2>Añadir administrador</h2>
-            <p>Introduce el correo que tendrá acceso al panel interno.</p>
+            <p>Introduce el correo y una contraseña propia para ese usuario.</p>
           </div>
 
           <form className="admin-form" onSubmit={handleAdd}>
@@ -124,6 +169,28 @@ const AdminsPage = () => {
                 placeholder="admin@local.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
+                required
+              />
+            </label>
+            <label className="admins-field">
+              <span>Contraseña</span>
+              <input
+                type="password"
+                placeholder="Minimo 8 caracteres"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                minLength={8}
+                required
+              />
+            </label>
+            <label className="admins-field">
+              <span>Confirmar contraseña</span>
+              <input
+                type="password"
+                placeholder="Repite la contraseña"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                minLength={8}
                 required
               />
             </label>
@@ -152,9 +219,14 @@ const AdminsPage = () => {
                       <span>Alta: {formatAdminDate(admin.createdAt)}</span>
                     </div>
                   </div>
-                  <button className="btn-ghost" type="button" onClick={() => handleRemove(admin.id)} disabled={removingAdminId === admin.id}>
-                    {removingAdminId === admin.id ? 'Eliminando...' : 'Eliminar'}
-                  </button>
+                  <div className="admin-list-actions">
+                    <button className="btn-secondary" type="button" onClick={() => handleResetPassword(admin.id, admin.email)} disabled={resettingAdminId === admin.id}>
+                      {resettingAdminId === admin.id ? 'Guardando...' : 'Cambiar clave'}
+                    </button>
+                    <button className="btn-ghost" type="button" onClick={() => handleRemove(admin.id)} disabled={removingAdminId === admin.id}>
+                      {removingAdminId === admin.id ? 'Eliminando...' : 'Eliminar'}
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>

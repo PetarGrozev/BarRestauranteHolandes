@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getAdminSessionFromApiRequest, isCustomerTableRequestAllowed } from '../../../lib/auth';
+import { getRestaurantContextFromRequest } from '../../../lib/restaurant-context';
 import { getOrders } from '../../../lib/db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -9,6 +10,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    const context = await getRestaurantContextFromRequest(req);
+    if (!context) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     const tableId = Number(req.query.tableId);
     const scopedTableId = Number.isInteger(tableId) && tableId > 0 ? tableId : undefined;
 
@@ -20,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    const orders = await getOrders(scopedTableId);
+    const orders = await getOrders(context.restaurantId, scopedTableId);
     return res.status(200).json(orders);
   } catch (error) {
     console.error('orders fetch error', error);

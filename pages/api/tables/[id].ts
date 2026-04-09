@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getAdminSessionFromApiRequest, isCustomerTableRequestAllowed } from '../../../lib/auth';
+import { getRestaurantContextFromRequest } from '../../../lib/restaurant-context';
 import { closeTableSession, getTableById, reopenTableSession } from '../../../lib/db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -10,12 +11,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'GET') {
-    if (!getAdminSessionFromApiRequest(req) && !isCustomerTableRequestAllowed(req, tableId)) {
+    const context = await getRestaurantContextFromRequest(req);
+    if (!context || (!getAdminSessionFromApiRequest(req) && !isCustomerTableRequestAllowed(req, tableId))) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
     try {
-      const table = await getTableById(tableId);
+      const table = await getTableById(context.restaurantId, tableId);
 
       if (!table) {
         return res.status(404).json({ error: 'Table not found' });
@@ -31,6 +33,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'POST') {
     const action = String(req.body?.action ?? '').toLowerCase();
     const adminSession = getAdminSessionFromApiRequest(req);
+    const context = await getRestaurantContextFromRequest(req);
+
+    if (!context) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
 
     try {
       if (action === 'close') {
@@ -38,7 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        const result = await closeTableSession(tableId);
+        const result = await closeTableSession(context.restaurantId, tableId);
         return res.status(200).json(result);
       }
 
@@ -47,7 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return res.status(403).json({ error: 'Forbidden' });
         }
 
-        const table = await reopenTableSession(tableId);
+        const table = await reopenTableSession(context.restaurantId, tableId);
         return res.status(200).json({ table });
       }
 
