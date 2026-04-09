@@ -103,6 +103,22 @@ export interface Admin {
   updatedAt: string;
 }
 
+export interface RestaurantSummary {
+  id: number;
+  name: string;
+  slug: string;
+  logoUrl?: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  counts: {
+    admins: number;
+    products: number;
+    tables: number;
+    orders: number;
+  };
+}
+
 export interface CartItem {
   cartLineId: string;
   productId: number;

@@ -1,20 +1,25 @@
 "use client";
 
 import { useState, useTransition, type ReactNode } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import AdminOrderAlerts from '@/components/AdminOrderAlerts';
+import { getBrandInitials, getBrandLogoSrc, getBrandName, internalAppLabel } from '@/lib/brand';
+import type { RestaurantBranding } from '../../lib/restaurants';
 
 type AppShellProps = {
   children: ReactNode;
   hasAdminSession?: boolean;
+  hasSuperAdminSession?: boolean;
+  currentBrand?: RestaurantBranding | null;
 };
 
 function isCustomerRoute(pathname: string | null) {
   return pathname?.startsWith('/mesa/') ?? false;
 }
 
-const NAV_ITEMS = [
+const ADMIN_NAV_ITEMS = [
   { href: '/tables', label: 'Mesas', icon: 'tables' as const },
   { href: '/order', label: 'Pedidos', icon: 'orders' as const },
   { href: '/kitchen', label: 'Cocina', icon: 'kitchen' as const },
@@ -22,7 +27,11 @@ const NAV_ITEMS = [
   { href: '/admin', label: 'Admin', icon: 'admin' as const },
 ];
 
-function NavIcon({ icon }: { icon: 'tables' | 'orders' | 'kitchen' | 'staff' | 'admin' }) {
+const SUPERADMIN_NAV_ITEMS = [
+  { href: '/superadmin', label: 'Restaurantes', icon: 'platform' as const },
+];
+
+function NavIcon({ icon }: { icon: 'tables' | 'orders' | 'kitchen' | 'staff' | 'admin' | 'platform' }) {
   if (icon === 'orders') {
     return (
       <svg aria-hidden="true" className="shell-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -65,6 +74,16 @@ function NavIcon({ icon }: { icon: 'tables' | 'orders' | 'kitchen' | 'staff' | '
     );
   }
 
+  if (icon === 'platform') {
+    return (
+      <svg aria-hidden="true" className="shell-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="16" rx="3" />
+        <path d="M3 10h18" />
+        <path d="M8 4v16" />
+      </svg>
+    );
+  }
+
   return (
     <svg aria-hidden="true" className="shell-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <rect x="4" y="6" width="16" height="11" rx="2" />
@@ -93,10 +112,17 @@ function isNavItemActive(pathname: string | null, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export default function AppShell({ children, hasAdminSession = false }: AppShellProps) {
+export default function AppShell({ children, hasAdminSession = false, hasSuperAdminSession = false, currentBrand = null }: AppShellProps) {
   const pathname = usePathname();
   const customerRoute = isCustomerRoute(pathname);
   const loginRoute = pathname === '/login';
+  const minimalChrome = customerRoute || loginRoute;
+  const brandName = getBrandName(currentBrand);
+  const brandLogoSrc = getBrandLogoSrc(currentBrand);
+  const brandInitials = getBrandInitials(currentBrand);
+  const shellTitle = hasSuperAdminSession ? 'Control de plataforma' : brandName;
+  const shellSubtitle = hasSuperAdminSession ? 'Superadmin' : internalAppLabel;
+  const navItems = hasSuperAdminSession ? SUPERADMIN_NAV_ITEMS : ADMIN_NAV_ITEMS;
   const [isPending, startTransition] = useTransition();
   const [logoutError, setLogoutError] = useState('');
 
@@ -119,18 +145,25 @@ export default function AppShell({ children, hasAdminSession = false }: AppShell
 
   return (
     <>
-      <AdminOrderAlerts />
+      {hasAdminSession && !hasSuperAdminSession && <AdminOrderAlerts />}
       <div className={`shell${customerRoute ? ' shell--customer' : ''}`}>
-        {!customerRoute && (
+        {!minimalChrome && (
           <header className="shell-header">
             <div className="shell-header-bar">
               <div className="shell-brand">
+                <div className="shell-brand-mark" aria-hidden="true">
+                  {brandLogoSrc ? (
+                    <Image className="shell-brand-image" src={brandLogoSrc} alt="" width={44} height={44} />
+                  ) : (
+                    <span className="shell-brand-initials">{brandInitials}</span>
+                  )}
+                </div>
                 <div className="shell-brand-copy">
-                  <span className="shell-title">Bar/Restaurant App</span>
-                  {hasAdminSession && !loginRoute && <span className="shell-subtitle">Acceso interno</span>}
+                  <span className="shell-title">{shellTitle}</span>
+                  {(hasAdminSession || hasSuperAdminSession) && !loginRoute && <span className="shell-subtitle">{shellSubtitle}</span>}
                 </div>
               </div>
-              {hasAdminSession && !loginRoute && (
+              {(hasAdminSession || hasSuperAdminSession) && !loginRoute && (
                 <button
                   className="shell-logout-button"
                   type="button"
@@ -143,10 +176,10 @@ export default function AppShell({ children, hasAdminSession = false }: AppShell
                 </button>
               )}
             </div>
-            {hasAdminSession && !loginRoute && (
+            {(hasAdminSession || hasSuperAdminSession) && !loginRoute && (
               <div className="shell-header-actions">
                 <nav className="shell-nav" aria-label="Navegación interna">
-                  {NAV_ITEMS.map(item => (
+                  {navItems.map(item => (
                     <Link key={item.href} className={`shell-nav-link${isNavItemActive(pathname, item.href) ? ' is-active' : ''}`} href={item.href}>
                       <NavIcon icon={item.icon} />
                       <span className="shell-nav-text">{item.label}</span>
@@ -158,13 +191,13 @@ export default function AppShell({ children, hasAdminSession = false }: AppShell
           </header>
         )}
 
-        <main className={`shell-main${customerRoute ? ' shell-main--customer' : ''}`}>{children}</main>
+        <main className={`shell-main${minimalChrome ? ' shell-main--customer' : ''}`}>{children}</main>
 
-        {logoutError && !customerRoute && <div className="shell-session-error">{logoutError}</div>}
+        {logoutError && !minimalChrome && <div className="shell-session-error">{logoutError}</div>}
 
-        {!customerRoute && (
+        {!minimalChrome && (
           <footer className="shell-footer">
-            <span>&copy; {new Date().getFullYear()} Bar/Restaurant App</span>
+            <span>&copy; {new Date().getFullYear()} {shellTitle}</span>
           </footer>
         )}
       </div>

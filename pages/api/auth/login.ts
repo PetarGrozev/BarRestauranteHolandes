@@ -6,9 +6,9 @@ import {
   buildAdminSessionCookie,
   buildExpiredCookie,
   createAdminSessionToken,
-  getBootstrapAdminEmail,
-  isAdminPasswordValid,
+  isStoredAdminPasswordValid,
 } from '../../../lib/auth';
+import { getRestaurantBySlug, normalizeRestaurantSlug } from '../../../lib/restaurants';
 
 function isSecureRequest(req: NextApiRequest) {
   return String(req.headers['x-forwarded-proto'] ?? '').split(',')[0] === 'https';
@@ -20,36 +20,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
+  const restaurantSlug = normalizeRestaurantSlug(req.body?.restaurant);
   const email = String(req.body?.email ?? '').trim().toLowerCase();
   const password = String(req.body?.password ?? '');
 
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Introduce email y contraseña.' });
+  if (!restaurantSlug || !email || !password) {
+    return res.status(400).json({ message: 'Introduce restaurante, email y contraseña.' });
   }
 
   try {
-    let admin = await db.admin.findUnique({ where: { email } });
+    const restaurant = await getRestaurantBySlug(restaurantSlug);
 
-    if (!admin) {
-      const bootstrapEmail = getBootstrapAdminEmail();
-
-      if (bootstrapEmail && email === bootstrapEmail) {
-        const adminCount = await db.admin.count();
-
-        if (adminCount === 0 && isAdminPasswordValid(password)) {
-          admin = await db.admin.create({
-            data: { email },
-          });
-        }
-      }
+    if (!restaurant || !restaurant.isActive) {
+      return res.status(401).json({ message: 'Restaurante no encontrado o inactivo.' });
     }
 
-    if (!admin || !isAdminPasswordValid(password)) {
+    const admin = await db.admin.findFirst({ where: { restaurantId: restaurant.id, email } });
+
+    if (!admin) {
+      return res.status(401).json({ message: 'Credenciales incorrectas.' });
+    }
+
+    if (!isStoredAdminPasswordValid(password, admin.passwordHash)) {
       return res.status(401).json({ message: 'Credenciales incorrectas.' });
     }
 
     const secure = isSecureRequest(req);
-    const token = createAdminSessionToken(admin.email);
+    const token = createAdminSessionToken({
+      email: admin.email,
+      restaurantId: restaurant.id,
+      restaurantSlug: restaurant.slug,
+    });
 
     res.setHeader('Set-Cookie', [
       buildAdminSessionCookie(token, secure),
@@ -57,7 +58,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       buildExpiredCookie(CUSTOMER_TABLE_COOKIE, secure),
     ]);
 
-    return res.status(200).json({ email: admin.email });
+    return res.status(200).json({ email: admin.email, restaurant: { id: restaurant.id, name: restaurant.name, slug: restaurant.slug } });
   } catch (error) {
     console.error('login error', error);
     return res.status(500).json({ message: 'No se pudo iniciar sesión.' });

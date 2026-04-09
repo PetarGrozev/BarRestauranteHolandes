@@ -78,9 +78,9 @@ function decorateTable(table: TableWithOrders) {
   };
 }
 
-async function getTableWithOrders(tableId: number) {
-  return db.diningTable.findUnique({
-    where: { id: tableId },
+async function getTableWithOrdersForRestaurant(restaurantId: number, tableId: number) {
+  return db.diningTable.findFirst({
+    where: { id: tableId, restaurantId },
     include: {
       orders: {
         include: {
@@ -103,14 +103,17 @@ async function getTableWithOrders(tableId: number) {
   }) as Promise<TableWithOrders | null>;
 }
 
-export async function getTableById(tableId: number) {
-  const table = await getTableWithOrders(tableId);
+export async function getTableById(restaurantId: number, tableId: number) {
+  const table = await getTableWithOrdersForRestaurant(restaurantId, tableId);
   return table ? decorateTable(table) : null;
 }
 
-export async function getOrders(tableId?: number) {
+export async function getOrders(restaurantId: number, tableId?: number) {
   return db.order.findMany({
-    where: tableId ? { tableId } : undefined,
+    where: {
+      restaurantId,
+      ...(tableId ? { tableId } : {}),
+    },
     include: {
       table: true,
       orderItems: {
@@ -125,8 +128,9 @@ export async function getOrders(tableId?: number) {
   });
 }
 
-export async function getProducts() {
+export async function getProducts(restaurantId: number) {
   return db.product.findMany({
+    where: { restaurantId },
     orderBy: { createdAt: 'desc' },
   });
 }
@@ -154,9 +158,9 @@ function mergeRequestedOrderItems(items: RequestedOrderItem[]) {
   return Array.from(itemsByKey.values());
 }
 
-export async function getTables() {
+export async function getTables(restaurantId: number) {
   const tables = await db.diningTable.findMany({
-    where: { isActive: true },
+    where: { isActive: true, restaurantId },
     include: {
       orders: {
         include: {
@@ -182,14 +186,15 @@ export async function getTables() {
   return tables.map(decorateTable);
 }
 
-export async function configureTables(interiorNumbers: number[], terraceNumbers: number[]) {
+export async function configureTables(restaurantId: number, interiorNumbers: number[], terraceNumbers: number[]) {
   const desiredRows = [
-    ...interiorNumbers.map(number => ({ number, area: 'INTERIOR' as const })),
-    ...terraceNumbers.map(number => ({ number, area: 'TERRACE' as const })),
+    ...interiorNumbers.map(number => ({ restaurantId, number, area: 'INTERIOR' as const })),
+    ...terraceNumbers.map(number => ({ restaurantId, number, area: 'TERRACE' as const })),
   ];
 
   await db.$transaction(async transaction => {
     const existingTables = await transaction.diningTable.findMany({
+      where: { restaurantId },
       orderBy: [{ area: 'asc' }, { number: 'asc' }],
     });
     const desiredKeys = new Set(desiredRows.map(table => `${table.area}:${table.number}`));
@@ -212,15 +217,15 @@ export async function configureTables(interiorNumbers: number[], terraceNumbers:
     }
   });
 
-  return getTables();
+  return getTables(restaurantId);
 }
 
-export async function createOrder(tableId: number, items: RequestedOrderItem[]) {
+export async function createOrder(restaurantId: number, tableId: number, items: RequestedOrderItem[]) {
   const mergedItems = mergeRequestedOrderItems(items);
 
   return db.$transaction(async transaction => {
-    const table = await transaction.diningTable.findUnique({
-      where: { id: tableId },
+    const table = await transaction.diningTable.findFirst({
+      where: { id: tableId, restaurantId },
     });
 
     if (!table || !table.isActive) {
@@ -234,6 +239,7 @@ export async function createOrder(tableId: number, items: RequestedOrderItem[]) 
     const requestedProductIds = mergedItems.map(item => item.productId);
     const products = await transaction.product.findMany({
       where: {
+        restaurantId,
         id: {
           in: requestedProductIds,
         },
@@ -273,6 +279,7 @@ export async function createOrder(tableId: number, items: RequestedOrderItem[]) 
       const updateResult = await transaction.product.updateMany({
         where: {
           id: item.productId,
+          restaurantId,
           isEnabled: true,
           stock: {
             gte: item.quantity,
@@ -292,10 +299,11 @@ export async function createOrder(tableId: number, items: RequestedOrderItem[]) 
             name: true,
             stock: true,
             isEnabled: true,
+            restaurantId: true,
           },
         });
 
-        if (!currentProduct) {
+        if (!currentProduct || currentProduct.restaurantId !== restaurantId) {
           throw new Error('PRODUCT_NOT_FOUND');
         }
 
@@ -309,11 +317,10 @@ export async function createOrder(tableId: number, items: RequestedOrderItem[]) 
 
     return transaction.order.create({
       data: {
+        restaurantId,
+        tableId,
         status: 'RECEIVED',
         tableSession: table.currentSession,
-        table: {
-          connect: { id: tableId },
-        },
         orderItems: {
           create: mergedItems.map(item => ({
             productId: item.productId,
@@ -333,10 +340,10 @@ export async function createOrder(tableId: number, items: RequestedOrderItem[]) 
   });
 }
 
-export async function closeTableSession(tableId: number) {
+export async function closeTableSession(restaurantId: number, tableId: number) {
   return db.$transaction(async transaction => {
-    const table = await transaction.diningTable.findUnique({
-      where: { id: tableId },
+    const table = await transaction.diningTable.findFirst({
+      where: { id: tableId, restaurantId },
       include: {
         orders: {
           include: {
@@ -389,7 +396,7 @@ export async function closeTableSession(tableId: number) {
     });
 
     return {
-      table: await getTableById(tableId),
+      table: await getTableById(restaurantId, tableId),
       summary: {
         ...summary,
         closedAt: closedAt.toISOString(),
@@ -398,10 +405,10 @@ export async function closeTableSession(tableId: number) {
   });
 }
 
-export async function reopenTableSession(tableId: number) {
+export async function reopenTableSession(restaurantId: number, tableId: number) {
   return db.$transaction(async transaction => {
-    const table = await transaction.diningTable.findUnique({
-      where: { id: tableId },
+    const table = await transaction.diningTable.findFirst({
+      where: { id: tableId, restaurantId },
     });
 
     if (!table || !table.isActive) {
@@ -419,14 +426,14 @@ export async function reopenTableSession(tableId: number) {
       });
     }
 
-    return getTableById(tableId);
+    return getTableById(restaurantId, tableId);
   });
 }
 
-export async function deleteOrder(orderId: number) {
+export async function deleteOrder(restaurantId: number, orderId: number) {
   return db.$transaction(async transaction => {
-    const order = await transaction.order.findUnique({
-      where: { id: orderId },
+    const order = await transaction.order.findFirst({
+      where: { id: orderId, restaurantId },
       include: {
         table: true,
         orderItems: {
@@ -451,7 +458,7 @@ export async function deleteOrder(orderId: number) {
 
     for (const item of order.orderItems) {
       await transaction.product.updateMany({
-        where: { id: item.productId },
+        where: { id: item.productId, restaurantId },
         data: {
           stock: {
             increment: item.quantity,
@@ -472,9 +479,18 @@ export async function deleteOrder(orderId: number) {
   });
 }
 
-export async function updateOrderStatus(orderId: number, status: string) {
+export async function updateOrderStatus(restaurantId: number, orderId: number, status: string) {
+  const order = await db.order.findFirst({
+    where: { id: orderId, restaurantId },
+    select: { id: true },
+  });
+
+  if (!order) {
+    throw new Error('ORDER_NOT_FOUND');
+  }
+
   return db.order.update({
-    where: { id: orderId },
+    where: { id: order.id },
     data: { status: status.toUpperCase() as any },
     include: {
       table: true,

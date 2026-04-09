@@ -1,9 +1,9 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { ADMIN_SESSION_COOKIE, CUSTOMER_MODE_COOKIE, CUSTOMER_TABLE_COOKIE, getAdminSessionFromCookieValue } from './lib/auth';
+import { ADMIN_SESSION_COOKIE, CUSTOMER_MODE_COOKIE, CUSTOMER_TABLE_COOKIE, SUPERADMIN_SESSION_COOKIE, getAdminSessionFromCookieValue, getSuperAdminSessionFromCookieValue } from './lib/auth';
 
 const CUSTOMER_ROUTE_PATTERN = /^\/mesa\/(\d+)(?:\/|$)/;
-const INTERNAL_ROUTE_PREFIXES = ['/admin', '/kitchen', '/staff', '/tables', '/order'];
+const INTERNAL_ROUTE_PREFIXES = ['/admin', '/kitchen', '/staff', '/tables', '/order', '/superadmin'];
 
 function getCustomerTableRedirect(pathname: string, tableId: string | undefined) {
   if (!tableId) {
@@ -19,11 +19,13 @@ export function proxy(request: NextRequest) {
   const customerRouteMatch = pathname.match(CUSTOMER_ROUTE_PATTERN);
   const secure = request.nextUrl.protocol === 'https:';
   const adminSession = getAdminSessionFromCookieValue(request.cookies.get(ADMIN_SESSION_COOKIE)?.value);
+  const superAdminSession = getSuperAdminSessionFromCookieValue(request.cookies.get(SUPERADMIN_SESSION_COOKIE)?.value);
   const customerModeEnabled = request.cookies.get(CUSTOMER_MODE_COOKIE)?.value === '1';
   const internalRoute = INTERNAL_ROUTE_PREFIXES.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  const superAdminRoute = pathname === '/superadmin' || pathname.startsWith('/superadmin/');
 
   if (pathname === '/login') {
-    if (!adminSession) {
+    if (!adminSession && !superAdminSession) {
       const response = NextResponse.next();
 
       if (customerModeEnabled) {
@@ -35,7 +37,7 @@ export function proxy(request: NextRequest) {
     }
 
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = '/admin';
+    redirectUrl.pathname = superAdminSession ? '/superadmin' : '/admin';
     redirectUrl.search = '';
     return NextResponse.redirect(redirectUrl);
   }
@@ -63,7 +65,25 @@ export function proxy(request: NextRequest) {
     return response;
   }
 
+  if (superAdminSession) {
+    if (!superAdminRoute && internalRoute) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = '/superadmin';
+      redirectUrl.search = '';
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    return NextResponse.next();
+  }
+
   if (adminSession) {
+    if (superAdminRoute) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = '/admin';
+      redirectUrl.search = '';
+      return NextResponse.redirect(redirectUrl);
+    }
+
     return NextResponse.next();
   }
 

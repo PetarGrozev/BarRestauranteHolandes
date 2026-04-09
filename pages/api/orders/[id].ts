@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getAdminSessionFromApiRequest } from '../../../lib/auth';
+import { getRestaurantContextFromRequest } from '../../../lib/restaurant-context';
 import { deleteOrder } from '../../../lib/db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -19,7 +20,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const order = await deleteOrder(orderId);
+    const context = await getRestaurantContextFromRequest(req);
+    if (!context) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const order = await deleteOrder(context.restaurantId, orderId);
     return res.status(200).json({ order });
   } catch (error) {
     console.error('delete order error', error);

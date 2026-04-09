@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getAdminSessionFromApiRequest } from '../../../lib/auth';
 import { db } from '../../../lib/db';
+import { getRestaurantContextFromRequest } from '../../../lib/restaurant-context';
 import { formatMenu, normalizeMenuPayload } from '../../../src/lib/menuApi';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -11,8 +12,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'GET') {
     try {
-      const menu = await db.menu.findUnique({
-        where: { id },
+      const context = await getRestaurantContextFromRequest(req);
+      if (!context) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const menu = await db.menu.findFirst({
+        where: { id, restaurantId: context.restaurantId },
         include: {
           courses: {
             include: {
@@ -38,7 +44,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'PATCH') {
-    if (!getAdminSessionFromApiRequest(req)) {
+    const adminSession = getAdminSessionFromApiRequest(req);
+    if (!adminSession) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -48,6 +55,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
+      const existingMenu = await db.menu.findFirst({ where: { id, restaurantId: adminSession.restaurantId } });
+      if (!existingMenu) {
+        return res.status(404).json({ error: 'Menu not found' });
+      }
+
+      const productCount = await db.product.count({
+        where: {
+          restaurantId: adminSession.restaurantId,
+          id: {
+            in: payload.courses.flatMap(course => course.productIds),
+          },
+        },
+      });
+
+      const expectedProductCount = new Set(payload.courses.flatMap(course => course.productIds)).size;
+      if (productCount !== expectedProductCount) {
+        return res.status(400).json({ error: 'Menu contains products from another restaurant or missing products.' });
+      }
+
       const menu = await db.$transaction(async transaction => {
         await transaction.menuCourseProduct.deleteMany({
           where: {
@@ -100,11 +126,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'DELETE') {
-    if (!getAdminSessionFromApiRequest(req)) {
+    const adminSession = getAdminSessionFromApiRequest(req);
+    if (!adminSession) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     try {
+      const existingMenu = await db.menu.findFirst({ where: { id, restaurantId: adminSession.restaurantId } });
+      if (!existingMenu) {
+        return res.status(404).json({ error: 'Menu not found' });
+      }
+
       await db.menu.delete({ where: { id } });
       return res.status(204).end();
     } catch (error) {

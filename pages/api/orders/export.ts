@@ -53,7 +53,8 @@ function getFilename(period: ExportPeriod, date = new Date()) {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (!getAdminSessionFromApiRequest(req)) {
+  const adminSession = getAdminSessionFromApiRequest(req);
+  if (!adminSession) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
@@ -68,6 +69,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const orders = await db.order.findMany({
       where: {
+        restaurantId: adminSession.restaurantId,
         status: 'DELIVERED',
         createdAt: {
           gte: start,
