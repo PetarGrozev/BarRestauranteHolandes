@@ -151,7 +151,7 @@ const AdminTablesPage = () => {
       })
       .catch(() => {
         if (!cancelled) {
-          pushToast({ message: 'No se pudieron generar algunos códigos QR.', title: 'Mesas', variant: 'error' });
+          pushToast({ message: 'Sommige QR-codes konden niet worden gegenereerd.', title: 'Tafels', variant: 'error' });
         }
       });
 
@@ -167,9 +167,9 @@ const AdminTablesPage = () => {
 
     try {
       await navigator.clipboard.writeText(getCustomerTableUrl(origin, tableId));
-      pushToast({ message: `Enlace de la mesa ${tableId} copiado.`, title: 'QR de mesa', variant: 'success' });
+      pushToast({ message: `Link van tafel ${tableId} gekopieerd.`, title: 'Tafel-QR', variant: 'success' });
     } catch {
-      pushToast({ message: 'No se pudo copiar el enlace de la mesa.', title: 'QR de mesa', variant: 'error' });
+      pushToast({ message: 'De tafellink kon niet worden gekopieerd.', title: 'Tafel-QR', variant: 'error' });
     }
   };
 
@@ -180,23 +180,23 @@ const AdminTablesPage = () => {
   const handlePrintSingleQr = (table: DiningTable) => {
     const qrCode = qrCodes[table.id];
     if (!qrCode || !origin) {
-      pushToast({ message: 'El QR todavía no está listo para imprimirse.', title: 'QR de mesa', variant: 'error' });
+      pushToast({ message: 'De QR-code is nog niet klaar om af te drukken.', title: 'Tafel-QR', variant: 'error' });
       return;
     }
 
     const printWindow = window.open('', '_blank', 'width=420,height=640');
     if (!printWindow) {
-      pushToast({ message: 'No se pudo abrir la ventana de impresión.', title: 'QR de mesa', variant: 'error' });
+      pushToast({ message: 'Het afdrukvenster kon niet worden geopend.', title: 'Tafel-QR', variant: 'error' });
       return;
     }
 
-    const label = table.area === 'TERRACE' ? 'Terraza' : 'Interior';
+    const label = table.area === 'TERRACE' ? 'Terras' : 'Binnen';
     const customerUrl = getCustomerTableUrl(origin, table.id);
 
     printWindow.document.write(`
       <html>
         <head>
-          <title>QR Mesa ${table.number}</title>
+          <title>QR Tafel ${table.number}</title>
           <style>
             body {
               margin: 0;
@@ -244,10 +244,10 @@ const AdminTablesPage = () => {
         <body>
           <div class="sheet">
             <div class="card">
-              <h1>Mesa ${table.number}</h1>
+              <h1>Tafel ${table.number}</h1>
               <p>${label}</p>
-              <img src="${qrCode}" alt="QR Mesa ${table.number}" />
-              <p>Escanea para hacer tu pedido</p>
+              <img src="${qrCode}" alt="QR Tafel ${table.number}" />
+              <p>Scan om je bestelling te plaatsen</p>
               <p class="link">${customerUrl}</p>
             </div>
           </div>
@@ -266,7 +266,7 @@ const AdminTablesPage = () => {
   const handleDownloadSingleQr = (table: DiningTable) => {
     const qrCode = qrCodes[table.id];
     if (!qrCode) {
-      pushToast({ message: 'El QR todavia no esta listo para descargarse.', title: 'QR de mesa', variant: 'error' });
+      pushToast({ message: 'De QR-code is nog niet klaar om te downloaden.', title: 'Tafel-QR', variant: 'error' });
       return;
     }
 
@@ -292,7 +292,7 @@ const AdminTablesPage = () => {
       nextTerraceCount < 0 ||
       nextInteriorCount + nextTerraceCount === 0
     ) {
-      pushToast({ message: 'Introduce una cantidad válida para interior y terraza. Al menos una zona debe tener mesas.', title: 'Mesas', variant: 'error' });
+      pushToast({ message: 'Voer een geldig aantal in voor binnen en terras. Minstens één zone moet tafels hebben.', title: 'Tafels', variant: 'error' });
       setSaving(false);
       return;
     }
@@ -315,9 +315,9 @@ const AdminTablesPage = () => {
       setTables(data.tables);
       setInteriorCount(String(data.interiorCount));
       setTerraceCount(String(data.terraceCount));
-      pushToast({ message: 'Configuración guardada correctamente.', title: 'Mesas', variant: 'success' });
+      pushToast({ message: 'Configuratie succesvol opgeslagen.', title: 'Tafels', variant: 'success' });
     } catch {
-      pushToast({ message: 'Error al guardar la configuración de mesas.', title: 'Mesas', variant: 'error' });
+      pushToast({ message: 'Het opslaan van de tafelconfiguratie is mislukt.', title: 'Tafels', variant: 'error' });
     } finally {
       setSaving(false);
     }
@@ -325,13 +325,13 @@ const AdminTablesPage = () => {
 
   return (
     <div className="admin-tables-page">
-      <h1>Configuración de Mesas</h1>
-      <p className="page-subtitle">Indica cuántas mesas quieres en interior y cuántas en terraza. El sistema las creará automáticamente de la 1 a la cantidad elegida en cada zona.</p>
+      <h1>Tafelconfiguratie</h1>
+      <p className="page-subtitle">Geef aan hoeveel tafels je binnen en op het terras wilt. Het systeem maakt ze automatisch aan van 1 tot het gekozen aantal per zone.</p>
 
       <form className="form-card" onSubmit={handleSubmit}>
         <div className="product-form-grid">
           <div className="form-field">
-            <label>Mesas de Interior</label>
+            <label>Tafels binnen</label>
             <input
               type="number"
               min="0"
@@ -340,10 +340,10 @@ const AdminTablesPage = () => {
               onChange={event => setInteriorCount(event.target.value)}
               placeholder="0"
             />
-            <p className="form-help-text">Se crearán las mesas 1 a {interiorCount || '0'} en interior.</p>
+            <p className="form-help-text">Tafels 1 t/m {interiorCount || '0'} worden binnen aangemaakt.</p>
           </div>
           <div className="form-field">
-            <label>Mesas de Terraza</label>
+            <label>Tafels terras</label>
             <input
               type="number"
               min="0"
@@ -352,101 +352,101 @@ const AdminTablesPage = () => {
               onChange={event => setTerraceCount(event.target.value)}
               placeholder="0"
             />
-            <p className="form-help-text">Se crearán las mesas 1 a {terraceCount || '0'} en terraza.</p>
+            <p className="form-help-text">Tafels 1 t/m {terraceCount || '0'} worden op het terras aangemaakt.</p>
           </div>
         </div>
         <div className="form-actions">
           <button className="btn-primary" type="submit" disabled={saving}>
-            {saving ? 'Guardando...' : 'Guardar Configuración'}
+            {saving ? 'Opslaan...' : 'Configuratie opslaan'}
           </button>
         </div>
       </form>
 
       <section className="tables-preview-section">
         <div className="tables-preview-header">
-          <h2>Mesas Actuales</h2>
+          <h2>Huidige tafels</h2>
           <div className="tables-preview-toolbar no-print">
-            {!loading && <span>{tables.length} mesas</span>}
+            {!loading && <span>{tables.length} tafels</span>}
             {!loading && tables.length > 0 && (
               <button className="btn-secondary" type="button" onClick={handlePrintAllQrs}>
                 <TableActionIcon kind="print" />
-                Imprimir todos los QR
+                Alle QR-codes afdrukken
               </button>
             )}
           </div>
         </div>
         {loading ? (
-          <p>Cargando mesas...</p>
+          <p>Tafels laden...</p>
         ) : tables.length === 0 ? (
-          <p className="empty-state">Aún no hay mesas configuradas</p>
+          <p className="empty-state">Er zijn nog geen tafels ingesteld</p>
         ) : (
           <>
             <div className="tables-stats-grid">
               <div className="tables-stat-card">
                 <strong>{sortedTables.length}</strong>
-                <span>Mesas activas en el plano</span>
+                <span>Actieve tafels op de plattegrond</span>
               </div>
               <div className="tables-stat-card">
                 <strong>{openTablesCount}</strong>
-                <span>Mesas abiertas ahora mismo</span>
+                <span>Tafels die nu open zijn</span>
               </div>
               <div className="tables-stat-card">
                 <strong>{qrReadyCount}</strong>
-                <span>QR listos para imprimir o descargar</span>
+                <span>QR-codes klaar om af te drukken of te downloaden</span>
               </div>
             </div>
             <div className="tables-number-summary">
               <div className="tables-number-block">
-                <strong>Interior</strong>
-                <span>{formatNumbers(tables.filter(table => table.area === 'INTERIOR').map(table => table.number)) || 'Sin mesas'}</span>
+                <strong>Binnen</strong>
+                <span>{formatNumbers(tables.filter(table => table.area === 'INTERIOR').map(table => table.number)) || 'Geen tafels'}</span>
               </div>
               <div className="tables-number-block">
-                <strong>Terraza</strong>
-                <span>{formatNumbers(tables.filter(table => table.area === 'TERRACE').map(table => table.number)) || 'Sin mesas'}</span>
+                <strong>Terras</strong>
+                <span>{formatNumbers(tables.filter(table => table.area === 'TERRACE').map(table => table.number)) || 'Geen tafels'}</span>
               </div>
             </div>
             <div className="tables-preview-grid">
               {sortedTables.map(table => (
-                <div key={table.id} className={`table-preview-card table-preview-card--${table.area.toLowerCase()}`} data-print-label={`Mesa ${table.number}`}>
+                <div key={table.id} className={`table-preview-card table-preview-card--${table.area.toLowerCase()}`} data-print-label={`Tafel ${table.number}`}>
                   <div className="table-preview-card-header">
                     <div className="table-preview-card-heading">
                       <span className="table-preview-area-badge">
                         <TableAreaIcon area={table.area} />
-                        {table.area === 'TERRACE' ? 'Terraza' : 'Interior'}
+                        {table.area === 'TERRACE' ? 'Terras' : 'Binnen'}
                       </span>
-                      <strong>Mesa {table.number}</strong>
+                      <strong>Tafel {table.number}</strong>
                     </div>
                     <span className={`table-preview-status table-preview-status--${table.isOpen ? 'open' : 'closed'}`}>
-                      {table.isOpen ? 'Abierta' : 'Libre'}
+                      {table.isOpen ? 'Open' : 'Vrij'}
                     </span>
                   </div>
                   <div className="table-qr-preview">
-                    {qrCodes[table.id] ? <img src={qrCodes[table.id]} alt={`QR de la mesa ${table.number}`} /> : <span>Generando QR...</span>}
+                    {qrCodes[table.id] ? <img src={qrCodes[table.id]} alt={`QR van tafel ${table.number}`} /> : <span>QR genereren...</span>}
                   </div>
                   <div className="table-print-copy">
-                    <strong>Escanea y pide</strong>
-                    <span>{table.area === 'TERRACE' ? 'Terraza' : 'Interior'}</span>
+                    <strong>Scan en bestel</strong>
+                    <span>{table.area === 'TERRACE' ? 'Terras' : 'Binnen'}</span>
                   </div>
                   <div className="table-preview-link-block">
-                    <strong>Ruta cliente</strong>
+                    <strong>Klantroute</strong>
                     <span>{getCustomerTableUrl(origin || 'https://tu-dominio.com', table.id)}</span>
                   </div>
                   <div className="table-preview-actions">
                     <a className="btn-secondary" href={origin ? getCustomerTableUrl(origin, table.id) : '#'} target="_blank" rel="noreferrer">
                       <TableActionIcon kind="open" />
-                      Abrir pedido cliente
+                      Klantbestelling openen
                     </a>
                     <button className="btn-secondary" type="button" onClick={() => handlePrintSingleQr(table)}>
                       <TableActionIcon kind="print" />
-                      Imprimir QR
+                      QR afdrukken
                     </button>
                     <button className="btn-secondary" type="button" onClick={() => handleDownloadSingleQr(table)}>
                       <TableActionIcon kind="download" />
-                      Descargar PNG
+                      PNG downloaden
                     </button>
                     <button className="btn-ghost" type="button" onClick={() => handleCopyQrLink(table.id)}>
                       <TableActionIcon kind="copy" />
-                      Copiar enlace QR
+                      QR-link kopiëren
                     </button>
                   </div>
                 </div>

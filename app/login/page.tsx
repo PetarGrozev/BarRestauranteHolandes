@@ -50,13 +50,13 @@ export default function LoginPage() {
 
         if (!response.ok) {
           const payload = await response.json().catch(() => null);
-          throw new Error(payload?.message ?? 'No se pudo iniciar sesión.');
+          throw new Error(payload?.message ?? 'Inloggen is niet gelukt.');
         }
 
         router.replace(redirectTo);
         router.refresh();
       } catch (requestError) {
-        setError(requestError instanceof Error ? requestError.message : 'No se pudo iniciar sesión.');
+        setError(requestError instanceof Error ? requestError.message : 'Inloggen is niet gelukt.');
       }
     });
   };
@@ -65,21 +65,21 @@ export default function LoginPage() {
     <section className="login-page">
       <div className="login-frame">
         <div className="login-showcase">
-          <h1>Entra y empieza el servicio.</h1>
+          <h1>Log in en start de service.</h1>
           <p className="login-lead">
-            Menos viajes, menos esperas y más servicio: la app recorta tiempo entre la mesa, la cocina y el cobro.
+            Minder lopen, minder wachten en meer service: de app verkort de tijd tussen tafel, keuken en afrekening.
           </p>
         </div>
 
         <div className="login-card">
           <div className="login-card-copy">
-            <h2>{mode === 'platform' ? 'Entrar como superadmin' : 'Iniciar sesión'}</h2>
-            <p>{mode === 'platform' ? 'Gestiona restaurantes y configuración global.' : 'Accede al entorno del restaurante con tu código y tus credenciales.'}</p>
+            <h2>{mode === 'platform' ? 'Inloggen als superadmin' : 'Inloggen'}</h2>
+            <p>{mode === 'platform' ? 'Beheer restaurants en globale instellingen.' : 'Open de restaurantomgeving met je code en je gegevens.'}</p>
           </div>
 
-          <div className="login-mode-switch" role="tablist" aria-label="Tipo de acceso">
+          <div className="login-mode-switch" role="tablist" aria-label="Type toegang">
             <button className={`login-mode-chip${mode === 'restaurant' ? ' is-active' : ''}`} type="button" onClick={() => setMode('restaurant')}>
-              Restaurante
+              Restaurant
             </button>
             <button className={`login-mode-chip${mode === 'platform' ? ' is-active' : ''}`} type="button" onClick={() => setMode('platform')}>
               Superadmin
@@ -89,35 +89,35 @@ export default function LoginPage() {
           <form className="login-form" onSubmit={handleSubmit}>
             {mode === 'restaurant' && (
               <label className="login-field">
-                <span>Código del restaurante</span>
+                <span>Restaurantcode</span>
                 <input type="text" value={restaurant} onChange={event => setRestaurant(event.target.value)} placeholder="mi-restaurante" autoComplete="organization" required />
               </label>
             )}
 
             <label className="login-field">
-              <span>{mode === 'platform' ? 'Email de plataforma' : 'Email autorizado'}</span>
+              <span>{mode === 'platform' ? 'Platform-e-mail' : 'Geautoriseerd e-mailadres'}</span>
               <input type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder={mode === 'platform' ? 'superadmin@plataforma.com' : 'admin@local.com'} autoComplete="username" required />
             </label>
 
             <label className="login-field">
-              <span>{mode === 'platform' ? 'Clave de plataforma' : 'Clave interna'}</span>
-              <input type="password" value={password} onChange={event => setPassword(event.target.value)} placeholder={mode === 'platform' ? 'Tu clave de superadmin' : 'Tu contraseña interna'} autoComplete="current-password" required />
+              <span>{mode === 'platform' ? 'Platformwachtwoord' : 'Intern wachtwoord'}</span>
+              <input type="password" value={password} onChange={event => setPassword(event.target.value)} placeholder={mode === 'platform' ? 'Je superadmin-wachtwoord' : 'Je interne wachtwoord'} autoComplete="current-password" required />
             </label>
 
             {error && <p className="login-error">{error}</p>}
 
             <button className="btn-primary login-submit" type="submit" disabled={isPending}>
-              {isPending ? 'Verificando acceso...' : mode === 'platform' ? 'Entrar a plataforma' : 'Entrar al panel'}
+              {isPending ? 'Toegang wordt gecontroleerd...' : mode === 'platform' ? 'Naar platform' : 'Naar dashboard'}
             </button>
           </form>
 
           <div className="login-note">
             <span className="login-note-dot" aria-hidden="true" />
-            <p>{mode === 'platform' ? 'Solo para administración global.' : 'Solo para personal autorizado.'}</p>
+            <p>{mode === 'platform' ? 'Alleen voor globaal beheer.' : 'Alleen voor geautoriseerd personeel.'}</p>
           </div>
         </div>
 
-        <p className="login-credit">Copyright Grozev Digital. Plataforma profesional para restauracion. Todos los derechos reservados.</p>
+        <p className="login-credit">Copyright Grozev Digital. Professioneel platform voor horeca. Alle rechten voorbehouden.</p>
       </div>
     </section>
   );

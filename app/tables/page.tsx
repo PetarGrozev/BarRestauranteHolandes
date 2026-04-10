@@ -7,8 +7,8 @@ import useAppToasts from '@/hooks/useAppToasts';
 import type { DiningTable, TableArea } from '@/types';
 
 const TABLE_AREA_LABELS: Record<TableArea, string> = {
-  INTERIOR: 'Interior',
-  TERRACE: 'Terraza',
+  INTERIOR: 'Binnen',
+  TERRACE: 'Terras',
 };
 
 const TablesPage = () => {
@@ -23,7 +23,7 @@ const TablesPage = () => {
     fetch('/api/tables')
       .then(response => {
         if (!response.ok) {
-          throw new Error('Failed to load tables');
+          throw new Error('Tafels laden is mislukt');
         }
         return response.json();
       })
@@ -65,7 +65,7 @@ const TablesPage = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to reopen table');
+        throw new Error('Tafel heropenen is mislukt');
       }
 
       const data = await response.json();
@@ -75,7 +75,7 @@ const TablesPage = () => {
 
       router.push(`/order?tableId=${table.id}`);
     } catch {
-      pushToast({ message: 'No se pudo abrir la mesa.', title: 'Mesa', variant: 'error' });
+      pushToast({ message: 'De tafel kon niet worden geopend.', title: 'Tafel', variant: 'error' });
     } finally {
       setOpeningTableId(null);
     }
@@ -84,25 +84,25 @@ const TablesPage = () => {
   return (
     <div className="tables-page">
       <div className="tables-page-header">
-        <h1>Selecciona Mesa</h1>
-        <p className="page-subtitle">Primero eliges la mesa y luego pasas directamente al pedido</p>
+        <h1>Kies een tafel</h1>
+        <p className="page-subtitle">Kies eerst de tafel en ga daarna direct naar de bestelling</p>
       </div>
 
       <section className="table-selector-card">
         <div className="order-section-header">
-          <h2>Mesas disponibles</h2>
+          <h2>Beschikbare tafels</h2>
         </div>
 
         {loading ? (
-          <p>Cargando mesas...</p>
+          <p>Tafels laden...</p>
         ) : availableAreas.length === 0 ? (
           <div className="empty-state order-empty-state">
-            <p>No hay mesas configuradas todavía.</p>
-            <a className="btn-primary" href="/admin/tables">Configurar Mesas</a>
+            <p>Er zijn nog geen tafels ingesteld.</p>
+            <a className="btn-primary" href="/admin/tables">Tafels instellen</a>
           </div>
         ) : (
           <>
-            <div className="order-section-tabs table-area-tabs" role="tablist" aria-label="Zonas de mesas">
+            <div className="order-section-tabs table-area-tabs" role="tablist" aria-label="Tafelzones">
               {availableAreas.map(area => (
                 <button
                   key={area}
@@ -125,21 +125,21 @@ const TablesPage = () => {
                   disabled={openingTableId === table.id}
                 >
                   <span className="table-button-title-row">
-                    <span className="table-button-title">Mesa {table.number}</span>
+                    <span className="table-button-title">Tafel {table.number}</span>
                     <span className={`table-status-badge${table.isOpen ? ' table-status-badge--open' : ' table-status-badge--closed'}`}>
-                      {table.isOpen ? 'Abierta' : 'Libre'}
+                      {table.isOpen ? 'Open' : 'Vrij'}
                     </span>
                   </span>
                   <span className="table-button-meta">{TABLE_AREA_LABELS[table.area]}</span>
                   <span className="table-button-summary">
                     {table.isOpen
-                      ? `${table.currentOrderCount ?? 0} pedidos · ${Number(table.currentTotal ?? 0).toFixed(2)} €`
+                      ? `${table.currentOrderCount ?? 0} bestellingen · ${Number(table.currentTotal ?? 0).toFixed(2)} €`
                       : table.lastClosedTotal != null
-                        ? `Último cierre · ${Number(table.lastClosedTotal).toFixed(2)} €`
-                        : 'Sin servicio abierto'}
+                        ? `Laatste afsluiting · ${Number(table.lastClosedTotal).toFixed(2)} €`
+                        : 'Geen actieve service'}
                   </span>
                   <span className="table-button-cta">
-                    {openingTableId === table.id ? 'Abriendo...' : table.isOpen ? 'Entrar en la mesa' : 'Abrir para nuevos clientes'}
+                    {openingTableId === table.id ? 'Openen...' : table.isOpen ? 'Naar tafel' : 'Openen voor nieuwe gasten'}
                   </span>
                 </button>
               ))}

@@ -7,7 +7,7 @@ import { ADMIN_SESSION_COOKIE, SUPERADMIN_SESSION_COOKIE, getAdminSessionFromCoo
 import '../src/styles/globals.css';
 
 export const metadata = {
-    title: `${internalAppLabel} | Multi-restaurante`,
+    title: `${internalAppLabel} | Multi-restaurant`,
 };
 
 type RootLayoutProps = {
@@ -23,7 +23,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
     const currentBrand = adminSession ? await getRestaurantBrandingById(adminSession.restaurantId) : null;
 
     return (
-        <html lang="en">
+        <html lang="nl">
             <body className="app-body">
                 <AppShell hasAdminSession={hasAdminSession} hasSuperAdminSession={hasSuperAdminSession} currentBrand={currentBrand}>{children}</AppShell>
             </body>

@@ -14,10 +14,10 @@ interface OrderTileProps {
 }
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
-  RECEIVED: 'Recibido',
-  PREPARING: 'Preparando',
-  READY: 'Listo',
-  DELIVERED: 'Entregado',
+  RECEIVED: 'Ontvangen',
+  PREPARING: 'In bereiding',
+  READY: 'Klaar',
+  DELIVERED: 'Bezorgd',
 };
 
 const STATUS_COLORS: Record<OrderStatus, string> = {
@@ -34,8 +34,8 @@ const NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
 };
 
 const AREA_LABELS: Record<TableArea, string> = {
-  INTERIOR: 'Interior',
-  TERRACE: 'Terraza',
+  INTERIOR: 'Binnen',
+  TERRACE: 'Terras',
 };
 
 const OrderTile: React.FC<OrderTileProps> = ({ order, onStatusUpdate, nextStatusOverride, onDeleteRequest, showDeliveryTimer = false, variant = 'default' }) => {
@@ -43,15 +43,15 @@ const OrderTile: React.FC<OrderTileProps> = ({ order, onStatusUpdate, nextStatus
   const itemCount = order.orderItems.reduce((sum, item) => sum + item.quantity, 0);
   const nextStatus = nextStatusOverride ?? NEXT_STATUS[order.status] ?? null;
   const isKitchenVariant = variant === 'kitchen';
-  const createdAtLabel = new Date(order.createdAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  const createdAtLabel = new Date(order.createdAt).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
 
   return (
     <div className={`order-tile order-tile--${variant}`}>
       <div className="order-tile-header">
         <div className="order-tile-heading">
-          <h3>Pedido #{order.id}</h3>
+          <h3>Bestelling #{order.id}</h3>
           {order.table && (
-            <p className="order-table-label">Mesa {order.table.number} · {AREA_LABELS[order.table.area]}</p>
+            <p className="order-table-label">Tafel {order.table.number} · {AREA_LABELS[order.table.area]}</p>
           )}
         </div>
         {isKitchenVariant ? (
@@ -85,24 +85,24 @@ const OrderTile: React.FC<OrderTileProps> = ({ order, onStatusUpdate, nextStatus
               {isKitchenVariant ? (
                 <>
                   <span className="order-tile-quantity">{item.quantity}</span>
-                  <span className="order-tile-item-name">{item.product?.name ?? `Producto #${item.productId}`}</span>
+                  <span className="order-tile-item-name">{item.product?.name ?? `Product #${item.productId}`}</span>
                 </>
               ) : (
                 <div className="order-tile-item-copy">
-                  <span className="order-tile-item-name-inline">{item.product?.name ?? `Producto #${item.productId}`}</span>
+                  <span className="order-tile-item-name-inline">{item.product?.name ?? `Product #${item.productId}`}</span>
                   <span className="order-tile-item-quantity-inline">x{item.quantity}</span>
                 </div>
               )}
               {!isKitchenVariant && <span className="order-tile-price">&euro;{(item.price * item.quantity).toFixed(2)}</span>}
             </div>
-            {item.note && <p className="order-tile-note">{isKitchenVariant ? item.note : `Nota: ${item.note}`}</p>}
+            {item.note && <p className="order-tile-note">{isKitchenVariant ? item.note : `Opmerking: ${item.note}`}</p>}
           </li>
         ))}
       </ul>
       <div className={`order-tile-footer${isKitchenVariant ? ' order-tile-footer--kitchen' : ''}`}>
-        <strong>{isKitchenVariant ? `${itemCount} ${itemCount === 1 ? 'articulo' : 'articulos'}` : `Total: ${total.toFixed(2)}`}</strong>
+        <strong>{isKitchenVariant ? `${itemCount} ${itemCount === 1 ? 'artikel' : 'artikelen'}` : `Totaal: ${total.toFixed(2)}`}</strong>
         {!isKitchenVariant && (
-          <span className="order-tile-footer-meta">{itemCount} {itemCount === 1 ? 'articulo' : 'articulos'}</span>
+          <span className="order-tile-footer-meta">{itemCount} {itemCount === 1 ? 'artikel' : 'artikelen'}</span>
         )}
       </div>
       {showDeliveryTimer && (
@@ -113,7 +113,7 @@ const OrderTile: React.FC<OrderTileProps> = ({ order, onStatusUpdate, nextStatus
           className="btn-primary order-tile-action"
           onClick={() => onStatusUpdate(order.id, nextStatus)}
         >
-          Marcar como {STATUS_LABELS[nextStatus]}
+          Markeren als {STATUS_LABELS[nextStatus]}
         </button>
       )}
       {onDeleteRequest && (
@@ -121,7 +121,7 @@ const OrderTile: React.FC<OrderTileProps> = ({ order, onStatusUpdate, nextStatus
           className="btn-ghost order-tile-action order-tile-action--danger"
           onClick={() => onDeleteRequest(order)}
         >
-          Eliminar pedido
+          Bestelling verwijderen
         </button>
       )}
     </div>

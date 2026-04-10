@@ -22,7 +22,7 @@ function buildEmptyCourse(courseType: MenuCourseType): CourseDraft {
 }
 
 function sortProducts(products: Product[]) {
-  return [...products].sort((left, right) => left.name.localeCompare(right.name, 'es-ES', { sensitivity: 'base' }));
+  return [...products].sort((left, right) => left.name.localeCompare(right.name, 'nl-NL', { sensitivity: 'base' }));
 }
 
 export default function AdminMenusPage() {
@@ -41,7 +41,7 @@ export default function AdminMenusPage() {
   const loadMenus = async () => {
     const response = await fetch('/api/menus');
     if (!response.ok) {
-      throw new Error('No se pudieron cargar los menus.');
+      throw new Error('Menu\'s laden is mislukt.');
     }
 
     setMenus((await response.json()) as Menu[]);
@@ -50,7 +50,7 @@ export default function AdminMenusPage() {
   const loadProducts = async () => {
     const response = await fetch('/api/products');
     if (!response.ok) {
-      throw new Error('No se pudieron cargar los productos.');
+      throw new Error('Producten laden is mislukt.');
     }
 
     setProducts((await response.json()) as Product[]);
@@ -58,7 +58,7 @@ export default function AdminMenusPage() {
 
   useEffect(() => {
     Promise.all([loadMenus(), loadProducts()]).catch(() => {
-      pushToast({ title: 'Menus', message: 'No se pudieron cargar los datos iniciales.', variant: 'error' });
+      pushToast({ title: 'Menu\'s', message: 'De begingegevens konden niet worden geladen.', variant: 'error' });
     });
   }, []);
 
@@ -128,7 +128,7 @@ export default function AdminMenusPage() {
 
     const hasEmptyCourse = courses.some(course => course.productIds.length === 0 || !course.label.trim());
     if (!name.trim() || courses.length === 0 || hasEmptyCourse) {
-      pushToast({ title: 'Menus', message: 'Completa el nombre y al menos una opción por cada bloque del menu.', variant: 'error' });
+      pushToast({ title: 'Menu\'s', message: 'Vul de naam in en kies minstens één optie per menublok.', variant: 'error' });
       return;
     }
 
@@ -153,16 +153,16 @@ export default function AdminMenusPage() {
 
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
-        throw new Error(payload?.error ?? 'No se pudo guardar el menu.');
+        throw new Error(payload?.error ?? 'Menu opslaan is mislukt.');
       }
 
       await loadMenus();
       resetForm();
-      pushToast({ title: 'Menus', message: editingMenuId ? 'Menu actualizado.' : 'Menu creado correctamente.', variant: 'success' });
+      pushToast({ title: 'Menu\'s', message: editingMenuId ? 'Menu bijgewerkt.' : 'Menu succesvol aangemaakt.', variant: 'success' });
     } catch (error) {
       pushToast({
-        title: 'Menus',
-        message: error instanceof Error ? error.message : 'No se pudo guardar el menu.',
+        title: 'Menu\'s',
+        message: error instanceof Error ? error.message : 'Menu opslaan is mislukt.',
         variant: 'error',
       });
     } finally {
@@ -181,7 +181,7 @@ export default function AdminMenusPage() {
       const response = await fetch(`/api/menus/${menuPendingDeletion.id}`, { method: 'DELETE' });
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
-        throw new Error(payload?.error ?? 'No se pudo borrar el menu.');
+        throw new Error(payload?.error ?? 'Menu verwijderen is mislukt.');
       }
 
       await loadMenus();
@@ -189,9 +189,9 @@ export default function AdminMenusPage() {
         resetForm();
       }
       setMenuPendingDeletion(null);
-      pushToast({ title: 'Menus', message: 'Menu eliminado.', variant: 'success' });
+      pushToast({ title: 'Menu\'s', message: 'Menu verwijderd.', variant: 'success' });
     } catch (error) {
-      pushToast({ title: 'Menus', message: error instanceof Error ? error.message : 'No se pudo borrar el menu.', variant: 'error' });
+      pushToast({ title: 'Menu\'s', message: error instanceof Error ? error.message : 'Menu verwijderen is mislukt.', variant: 'error' });
     } finally {
       setDeleting(false);
     }
@@ -200,32 +200,32 @@ export default function AdminMenusPage() {
   return (
     <div className="form-page menu-admin-page">
       <div className="product-form-header">
-        <h1>Menus</h1>
-        <p className="page-subtitle">Configura menus flexibles: puedes crear uno completo con entrante, principal, postre y bebida, o dejar solo los bloques que quieras.</p>
+        <h1>Menu\'s</h1>
+        <p className="page-subtitle">Stel flexibele menu\'s samen: maak een volledig menu met voor-, hoofd- en nagerecht plus drank, of laat alleen de gewenste blokken staan.</p>
       </div>
 
       <div className="menu-admin-layout">
         <form className="form-card menu-admin-form" onSubmit={handleSubmit}>
           <div className="product-form-grid">
             <div className="form-field product-form-field--wide">
-              <label>Nombre del menu</label>
-              <input type="text" value={name} onChange={event => setName(event.target.value)} placeholder="Ejemplo: Menu del dia" required />
+              <label>Menunaam</label>
+              <input type="text" value={name} onChange={event => setName(event.target.value)} placeholder="Bijvoorbeeld: dagmenu" required />
             </div>
             <div className="form-field product-form-field--wide">
-              <label>Descripción</label>
-              <textarea value={description} onChange={event => setDescription(event.target.value)} rows={3} placeholder="Texto corto para explicar el estilo del menu o cuándo se sirve." />
+              <label>Beschrijving</label>
+              <textarea value={description} onChange={event => setDescription(event.target.value)} rows={3} placeholder="Korte tekst om de stijl van het menu of het serveermoment uit te leggen." />
             </div>
             <div className="form-field">
-              <label>Estado</label>
+              <label>Status</label>
               <select value={isActive ? 'active' : 'inactive'} onChange={event => setIsActive(event.target.value === 'active')}>
-                <option value="active">Activo</option>
-                <option value="inactive">Oculto</option>
+                <option value="active">Actief</option>
+                <option value="inactive">Verborgen</option>
               </select>
             </div>
           </div>
 
           <div className="menu-admin-course-toolbar">
-            <h2>Bloques del menu</h2>
+            <h2>Menublokken</h2>
             <div className="menu-admin-course-adders">
               {availableCourseTypes.map(option => (
                 <button key={option.value} className="btn-ghost" type="button" onClick={() => addCourse(option.value)}>
@@ -245,13 +245,13 @@ export default function AdminMenusPage() {
                   </div>
                   {courses.length > 1 && (
                     <button className="btn-ghost" type="button" onClick={() => removeCourse(course.courseType)}>
-                      Quitar bloque
+                      Blok verwijderen
                     </button>
                   )}
                 </div>
 
                 <div className="form-field">
-                  <label>Título visible para el cliente</label>
+                  <label>Titel zichtbaar voor de klant</label>
                   <input
                     type="text"
                     value={course.label}
@@ -273,9 +273,9 @@ export default function AdminMenusPage() {
                         <div>
                           <strong>{product.name}</strong>
                           <span>
-                            {product.category === 'DRINK' ? 'Bebida' : 'Comida'} · {product.price.toFixed(2)} €
-                            {!product.isEnabled ? ' · deshabilitado' : ''}
-                            {product.stock <= 0 ? ' · sin stock' : ''}
+                            {product.category === 'DRINK' ? 'Drank' : 'Eten'} · {product.price.toFixed(2)} €
+                            {!product.isEnabled ? ' · uitgeschakeld' : ''}
+                            {product.stock <= 0 ? ' · geen voorraad' : ''}
                           </span>
                         </div>
                       </label>
@@ -288,18 +288,18 @@ export default function AdminMenusPage() {
 
           <div className="form-actions product-form-actions">
             <button className="btn-primary" type="submit" disabled={saving}>
-              {saving ? 'Guardando...' : editingMenuId ? 'Actualizar menu' : 'Crear menu'}
+              {saving ? 'Opslaan...' : editingMenuId ? 'Menu bijwerken' : 'Menu aanmaken'}
             </button>
             <button className="btn-ghost" type="button" onClick={resetForm}>
-              {editingMenuId ? 'Cancelar edición' : 'Limpiar'}
+              {editingMenuId ? 'Bewerken annuleren' : 'Wissen'}
             </button>
           </div>
         </form>
 
         <aside className="menu-admin-sidebar">
           <div className="form-card menu-admin-summary-card">
-            <h2>Menus creados</h2>
-            <p className="page-subtitle">Pulsa editar para reutilizar la configuración. El cliente solo verá los menús activos.</p>
+            <h2>Aangemaakte menu\'s</h2>
+            <p className="page-subtitle">Klik op bewerken om de configuratie te hergebruiken. De klant ziet alleen actieve menu\'s.</p>
             <div className="menu-admin-summary-list">
               {menus.length > 0 ? (
                 menus.map(menu => (
@@ -307,24 +307,24 @@ export default function AdminMenusPage() {
                     <div className="menu-admin-summary-copy">
                       <div className="menu-admin-summary-topline">
                         <strong>{menu.name}</strong>
-                        <span className={`menu-admin-status${menu.isActive ? ' is-active' : ''}`}>{menu.isActive ? 'Activo' : 'Oculto'}</span>
+                        <span className={`menu-admin-status${menu.isActive ? ' is-active' : ''}`}>{menu.isActive ? 'Actief' : 'Verborgen'}</span>
                       </div>
                       {menu.description && <p>{menu.description}</p>}
                       <ul>
                         {menu.courses.map(course => (
-                          <li key={course.id}>{course.label}: {course.options.length} opciones</li>
+                          <li key={course.id}>{course.label}: {course.options.length} opties</li>
                         ))}
                       </ul>
                     </div>
                     <div className="menu-admin-summary-actions">
-                      <button className="btn-secondary" type="button" onClick={() => handleEdit(menu)}>Editar</button>
-                      <button className="btn-ghost" type="button" onClick={() => setMenuPendingDeletion(menu)}>Borrar</button>
+                      <button className="btn-secondary" type="button" onClick={() => handleEdit(menu)}>Bewerken</button>
+                      <button className="btn-ghost" type="button" onClick={() => setMenuPendingDeletion(menu)}>Verwijderen</button>
                     </div>
                   </article>
                 ))
               ) : (
                 <div className="empty-state">
-                  <p>Todavía no has creado ningún menu.</p>
+                  <p>Je hebt nog geen menu aangemaakt.</p>
                 </div>
               )}
             </div>
@@ -334,10 +334,10 @@ export default function AdminMenusPage() {
 
       <ConfirmDialog
         open={Boolean(menuPendingDeletion)}
-        title="Eliminar menu"
-        message={menuPendingDeletion ? `¿Seguro que quieres borrar el menu ${menuPendingDeletion.name}?` : ''}
-        confirmLabel={deleting ? 'Borrando...' : 'Sí, borrar menu'}
-        cancelLabel="Cancelar"
+        title="Menu verwijderen"
+        message={menuPendingDeletion ? `Weet je zeker dat je het menu ${menuPendingDeletion.name} wilt verwijderen?` : ''}
+        confirmLabel={deleting ? 'Verwijderen...' : 'Ja, menu verwijderen'}
+        cancelLabel="Annuleren"
         confirmVariant="danger"
         busy={deleting}
         onConfirm={handleDelete}

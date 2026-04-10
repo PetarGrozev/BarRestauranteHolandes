@@ -21,30 +21,30 @@ const KitchenPage = () => {
     <div className="ops-page ops-page--kitchen">
       <div className="ops-page-hero">
         <div>
-          <h1>COCINA</h1>
+          <h1>KEUKEN</h1>
         </div>
         <div className="ops-metrics-grid">
           <div className="ops-metric-card">
             <strong>{kitchenOrders.length}</strong>
-            <span>Pedidos en cola</span>
+            <span>Bestellingen in wachtrij</span>
           </div>
           <div className="ops-metric-card">
             <strong>{receivedCount}</strong>
-            <span>Recibidos</span>
+            <span>Ontvangen</span>
           </div>
           <div className="ops-metric-card">
             <strong>{preparingCount}</strong>
-            <span>Preparando</span>
+            <span>In bereiding</span>
           </div>
         </div>
       </div>
 
       {loading ? (
-        <p>Cargando pedidos...</p>
+        <p>Bestellingen laden...</p>
       ) : kitchenOrders.length === 0 ? (
         <div className="empty-state ops-empty-state">
-          <strong>La cocina está al día.</strong>
-          <p>No hay pedidos pendientes para preparar ahora mismo.</p>
+          <strong>De keuken is bijgewerkt.</strong>
+          <p>Er zijn op dit moment geen bestellingen om te bereiden.</p>
         </div>
       ) : (
         <div className="orders-grid">

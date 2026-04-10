@@ -40,7 +40,7 @@ const AppToastRow = ({ toast, onClose }: AppToastRowProps) => {
         {toast.title ? <strong>{toast.title}</strong> : null}
         <span>{toast.message}</span>
       </div>
-      <button className="app-toast-close" type="button" onClick={() => onClose(toast.id)} aria-label="Cerrar aviso">
+      <button className="app-toast-close" type="button" onClick={() => onClose(toast.id)} aria-label="Melding sluiten">
         ×
       </button>
     </div>

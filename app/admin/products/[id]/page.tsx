@@ -43,7 +43,7 @@ const EditProductPage = () => {
         setOrderTarget(data.orderTarget);
         setIsEnabled(Boolean(data.isEnabled));
       })
-      .catch(() => pushToast({ message: 'Producto no encontrado.', title: 'Producto', variant: 'error' }))
+      .catch(() => pushToast({ message: 'Product niet gevonden.', title: 'Product', variant: 'error' }))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -61,12 +61,12 @@ const EditProductPage = () => {
     } catch (error) {
       const code = error instanceof Error ? error.message : 'UNKNOWN';
       pushToast({
-        title: 'Imagen',
+        title: 'Afbeelding',
         variant: 'error',
         message:
           code === 'FILE_TOO_LARGE'
-            ? `La imagen supera el límite de ${Math.round(MAX_PRODUCT_IMAGE_BYTES / 1024 / 1024)} MB.`
-            : 'Selecciona una imagen JPG, PNG, WEBP o GIF válida.',
+            ? `De afbeelding overschrijdt de limiet van ${Math.round(MAX_PRODUCT_IMAGE_BYTES / 1024 / 1024)} MB.`
+            : 'Selecteer een geldige JPG-, PNG-, WEBP- of GIF-afbeelding.',
       });
     } finally {
       event.target.value = '';
@@ -100,12 +100,12 @@ const EditProductPage = () => {
         const payload = await res.json().catch(() => null);
         throw new Error(payload?.error ?? 'Failed');
       }
-      pushToast({ message: 'Producto actualizado correctamente.', title: 'Producto', variant: 'success' });
+      pushToast({ message: 'Product is succesvol bijgewerkt.', title: 'Product', variant: 'success' });
       router.push('/admin/products');
     } catch (error) {
       pushToast({
-        message: error instanceof Error && error.message !== 'Failed' ? error.message : 'Error al actualizar producto.',
-        title: 'Producto',
+        message: error instanceof Error && error.message !== 'Failed' ? error.message : 'Product bijwerken is mislukt.',
+        title: 'Product',
         variant: 'error',
       });
     } finally {
@@ -113,95 +113,95 @@ const EditProductPage = () => {
     }
   };
 
-  if (loading) return <p>Cargando producto...</p>;
+  if (loading) return <p>Product laden...</p>;
 
   return (
     <div className="form-page">
       <div className="product-form-header">
-        <h1>Editar Producto</h1>
-        <p className="page-subtitle">Ajusta datos, comprueba la tarjeta y guarda los cambios cuando esté listo.</p>
+        <h1>Product bewerken</h1>
+        <p className="page-subtitle">Pas gegevens aan, controleer de kaart en sla op wanneer alles klopt.</p>
       </div>
       <div className="product-form-layout">
         <form className="form-card product-form-card" onSubmit={handleSubmit}>
           <div className="product-form-grid">
             <div className="form-field product-form-field--wide">
-              <label>Nombre</label>
-              <input type="text" value={name} onChange={e => setName(e.target.value)} required placeholder="Ejemplo: Agua con gas" />
+              <label>Naam</label>
+              <input type="text" value={name} onChange={e => setName(e.target.value)} required placeholder="Bijvoorbeeld: bruiswater" />
             </div>
             <div className="form-field product-form-field--wide">
-              <label>Descripción</label>
-              <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Detalles breves para que se identifique rápido" />
+              <label>Beschrijving</label>
+              <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Korte details zodat het snel herkenbaar is" />
             </div>
             <div className="form-field">
-              <label>Precio (€)</label>
+              <label>Prijs (€)</label>
               <input type="number" step="0.01" min="0" value={price} onChange={e => setPrice(e.target.value)} required placeholder="0.00" />
             </div>
             <div className="form-field">
-              <label>Stock disponible</label>
+              <label>Beschikbare voorraad</label>
               <input type="number" step="1" min="0" value={stock} onChange={e => setStock(e.target.value)} required placeholder="0" />
-              <p className="form-help-text">Si el stock es 0, el producto no se podrá pedir hasta reponerlo.</p>
+              <p className="form-help-text">Bij voorraad 0 kan het product pas weer besteld worden na aanvullen.</p>
             </div>
             <div className="form-field">
-              <label>Imagen del Producto</label>
+              <label>Productafbeelding</label>
               <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={handleImageSelection} />
-              <p className="form-help-text">Selecciona la foto desde tu móvil, tablet u ordenador. Máximo 2 MB.</p>
-              {imageName && <p className="form-help-text">Archivo seleccionado: {imageName}</p>}
+              <p className="form-help-text">Selecteer de foto vanaf je mobiel, tablet of computer. Maximaal 2 MB.</p>
+              {imageName && <p className="form-help-text">Geselecteerd bestand: {imageName}</p>}
               {imageUrl && (
                 <div className="product-image-field-actions">
-                  <button className="btn-ghost" type="button" onClick={clearImage}>Quitar imagen</button>
+                  <button className="btn-ghost" type="button" onClick={clearImage}>Afbeelding verwijderen</button>
                 </div>
               )}
             </div>
             <div className="form-field">
-              <label>Categoría</label>
+              <label>Categorie</label>
               <select value={category} onChange={e => setCategory(e.target.value as ProductCategory)}>
-                <option value="FOOD">Comida</option>
-                <option value="DRINK">Bebida</option>
+                <option value="FOOD">Eten</option>
+                <option value="DRINK">Drank</option>
               </select>
             </div>
             <div className="form-field">
-              <label>Destino del Pedido</label>
+              <label>Bestemmingsdoel</label>
               <select value={orderTarget} onChange={e => setOrderTarget(e.target.value)}>
-                <option value="KITCHEN">Cocina</option>
-                <option value="STAFF">Sala</option>
-                <option value="BOTH">Ambos</option>
+                <option value="KITCHEN">Keuken</option>
+                <option value="STAFF">Bediening</option>
+                <option value="BOTH">Beide</option>
               </select>
             </div>
             <div className="form-field">
-              <label>Estado del producto</label>
+              <label>Productstatus</label>
               <select value={isEnabled ? 'enabled' : 'disabled'} onChange={e => setIsEnabled(e.target.value === 'enabled')}>
-                <option value="enabled">Habilitado</option>
-                <option value="disabled">Deshabilitado</option>
+                <option value="enabled">Ingeschakeld</option>
+                <option value="disabled">Uitgeschakeld</option>
               </select>
             </div>
           </div>
           <div className="form-actions product-form-actions">
             <button className="btn-primary" type="submit" disabled={submitting}>
-              {submitting ? 'Guardando...' : 'Guardar Cambios'}
+              {submitting ? 'Opslaan...' : 'Wijzigingen opslaan'}
             </button>
             <button className="btn-ghost" type="button" onClick={() => router.back()}>
-              Cancelar
+              Annuleren
             </button>
           </div>
         </form>
 
-        <aside className="product-preview-card" aria-label="Vista previa del producto">
+        <aside className="product-preview-card" aria-label="Voorbeeld van product">
           <div className="product-preview-media">
-            {imageUrl ? <img src={imageUrl} alt={name || 'Vista previa del producto'} /> : <span>Sin imagen</span>}
+            {imageUrl ? <img src={imageUrl} alt={name || 'Productvoorbeeld'} /> : <span>Geen afbeelding</span>}
           </div>
           <div className="product-preview-body">
             <div className="product-preview-badges">
-              <span className="product-preview-badge">{category === 'DRINK' ? 'Bebida' : 'Comida'}</span>
+              <span className="product-preview-badge">{category === 'DRINK' ? 'Drank' : 'Eten'}</span>
               <span className="product-preview-badge product-preview-badge--muted">
-                {orderTarget === 'KITCHEN' ? 'Cocina' : orderTarget === 'STAFF' ? 'Sala' : 'Ambos'}
+                {orderTarget === 'KITCHEN' ? 'Keuken' : orderTarget === 'STAFF' ? 'Bediening' : 'Beide'}
               </span>
               <span className="product-preview-badge product-preview-badge--muted">
-                {Number(stock) > 0 ? `Stock ${Number(stock)}` : 'Sin stock'}
+                {Number(stock) > 0 ? `Voorraad ${Number(stock)}` : 'Geen voorraad'}
               </span>
-              <span className="product-preview-badge product-preview-badge--muted">{isEnabled ? 'Habilitado' : 'Deshabilitado'}</span>
+              <span className="product-preview-badge product-preview-badge--muted">{isEnabled ? 'Ingeschakeld' : 'Uitgeschakeld'}</span>
             </div>
-            <h2>{name || 'Nombre del producto'}</h2>
-            <p>{description || 'La descripción aparecerá aquí para comprobar de un vistazo cómo se leerá en la tarjeta.'}</p>
+            <h2>{name || 'Productnaam'}</h2>
+            <p>{description || 'De beschrijving verschijnt hier zodat je meteen ziet hoe die op de kaart wordt gelezen.'}</p>
             <strong>{price ? `${Number(price).toFixed(2)} €` : '0.00 €'}</strong>
           </div>
         </aside>

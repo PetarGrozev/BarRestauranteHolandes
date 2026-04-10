@@ -26,16 +26,16 @@ const ProductsPage = () => {
   }, []);
 
   const visibleProducts = useMemo(() => {
-    const normalizedSearch = deferredSearch.trim().toLocaleLowerCase('es-ES');
+    const normalizedSearch = deferredSearch.trim().toLocaleLowerCase('nl-NL');
 
     return [...products]
-      .sort((left, right) => left.name.localeCompare(right.name, 'es-ES', { sensitivity: 'base' }))
+      .sort((left, right) => left.name.localeCompare(right.name, 'nl-NL', { sensitivity: 'base' }))
       .filter(product => {
         if (!normalizedSearch) {
           return true;
         }
 
-        return product.name.toLocaleLowerCase('es-ES').includes(normalizedSearch);
+        return product.name.toLocaleLowerCase('nl-NL').includes(normalizedSearch);
       });
   }, [deferredSearch, products]);
 
@@ -60,9 +60,9 @@ const ProductsPage = () => {
       if (!res.ok) throw new Error('Failed');
       setProducts(prev => prev.filter(p => p.id !== productPendingDeletion.id));
       setProductPendingDeletion(null);
-      pushToast({ message: 'Producto eliminado correctamente.', title: 'Producto', variant: 'success' });
+      pushToast({ message: 'Product is succesvol verwijderd.', title: 'Product', variant: 'success' });
     } catch {
-      pushToast({ message: 'Error al eliminar producto.', title: 'Producto', variant: 'error' });
+      pushToast({ message: 'Product verwijderen is mislukt.', title: 'Product', variant: 'error' });
     } finally {
       setDeletingProduct(false);
     }
@@ -99,14 +99,14 @@ const ProductsPage = () => {
       const updatedProduct = (await res.json()) as Product;
       setProducts(prev => prev.map(item => (item.id === updatedProduct.id ? updatedProduct : item)));
       pushToast({
-        message: updatedProduct.isEnabled ? 'Producto habilitado correctamente.' : 'Producto deshabilitado correctamente.',
-        title: 'Producto',
+        message: updatedProduct.isEnabled ? 'Product is succesvol ingeschakeld.' : 'Product is succesvol uitgeschakeld.',
+        title: 'Product',
         variant: 'success',
       });
     } catch (error) {
       pushToast({
-        message: error instanceof Error && error.message !== 'Failed' ? error.message : 'No se pudo actualizar el estado del producto.',
-        title: 'Producto',
+        message: error instanceof Error && error.message !== 'Failed' ? error.message : 'De productstatus kon niet worden bijgewerkt.',
+        title: 'Product',
         variant: 'error',
       });
     } finally {
@@ -117,19 +117,19 @@ const ProductsPage = () => {
   return (
     <div className="products-page">
       <div className="page-header">
-        <h1>Productos</h1>
+        <h1>Producten</h1>
         <button className="btn-primary" onClick={() => router.push('/admin/products/create')}>
-          + Nuevo Producto
+          + Nieuw product
         </button>
       </div>
       <div className="order-browser-toolbar">
         <label className="order-search-field">
-          <span className="order-search-label">Buscar por nombre</span>
+          <span className="order-search-label">Zoeken op naam</span>
           <input
             type="text"
             value={search}
             onChange={event => setSearch(event.target.value)}
-            placeholder="Ejemplo: Coca-Cola"
+            placeholder="Bijvoorbeeld: Cola"
           />
         </label>
       </div>
@@ -145,15 +145,15 @@ const ProductsPage = () => {
           />
         ))}
       </div>
-      {products.length === 0 && <p className="empty-state">No hay productos aún</p>}
-      {products.length > 0 && visibleProducts.length === 0 && <p className="empty-state">No hay productos con ese nombre</p>}
+      {products.length === 0 && <p className="empty-state">Er zijn nog geen producten</p>}
+      {products.length > 0 && visibleProducts.length === 0 && <p className="empty-state">Er zijn geen producten met die naam</p>}
 
       <ConfirmDialog
         open={Boolean(productPendingDeletion)}
-        title="Eliminar producto"
-        message={productPendingDeletion ? `¿Seguro que quieres eliminar ${productPendingDeletion.name}? Esta acción no se puede deshacer.` : ''}
-        confirmLabel={deletingProduct ? 'Eliminando...' : 'Sí, eliminar'}
-        cancelLabel="Cancelar"
+        title="Product verwijderen"
+        message={productPendingDeletion ? `Weet je zeker dat je ${productPendingDeletion.name} wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.` : ''}
+        confirmLabel={deletingProduct ? 'Verwijderen...' : 'Ja, verwijderen'}
+        cancelLabel="Annuleren"
         confirmVariant="danger"
         busy={deletingProduct}
         onConfirm={handleConfirmDelete}

@@ -21,30 +21,30 @@ const StaffPage = () => {
     <div className="ops-page ops-page--staff">
       <div className="ops-page-hero">
         <div>
-          <h1>SALA</h1>
+          <h1>BEDIENING</h1>
         </div>
         <div className="ops-metrics-grid">
           <div className="ops-metric-card">
             <strong>{staffOrders.length}</strong>
-            <span>Pedidos visibles</span>
+            <span>Zichtbare bestellingen</span>
           </div>
           <div className="ops-metric-card">
             <strong>{readyCount}</strong>
-            <span>Listos para salir</span>
+            <span>Klaar om uit te serveren</span>
           </div>
           <div className="ops-metric-card">
             <strong>{deliveredCount}</strong>
-            <span>Entregados</span>
+            <span>Geleverd</span>
           </div>
         </div>
       </div>
 
       {loading ? (
-        <p>Cargando...</p>
+        <p>Laden...</p>
       ) : staffOrders.length === 0 ? (
         <div className="empty-state ops-empty-state">
-          <strong>No hay entregas pendientes.</strong>
-          <p>Cuando cocina marque un pedido como listo aparecerá aquí automáticamente.</p>
+          <strong>Er zijn geen leveringen in behandeling.</strong>
+          <p>Zodra de keuken een bestelling als klaar markeert, verschijnt die hier automatisch.</p>
         </div>
       ) : (
         <div className="orders-grid">

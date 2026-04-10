@@ -1,12 +1,12 @@
 import type { RestaurantBranding } from '../../lib/restaurants';
 
 export const defaultRestaurantBrand = {
-  name: 'Tu Restaurante',
+  name: 'Jouw Restaurant',
   logoSrc: '',
-  logoAlt: 'Logo del restaurante',
+  logoAlt: 'Logo van het restaurant',
 };
 
-export const internalAppLabel = 'Portal interno';
+export const internalAppLabel = 'Intern portaal';
 
 type BrandInput = RestaurantBranding | { name?: string | null; logoSrc?: string | null; logoAlt?: string | null } | null | undefined;
 
@@ -20,7 +20,7 @@ function hasStaticLogoSource(brand?: BrandInput): brand is { name?: string | nul
 }
 
 export function getBrandName(brand?: BrandInput) {
-  return resolveBrandName(brand) || 'Bar/Restaurant App';
+  return resolveBrandName(brand) || 'Bar/Restaurant-app';
 }
 
 export function getBrandInitials(brand?: BrandInput) {

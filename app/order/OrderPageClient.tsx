@@ -16,20 +16,20 @@ import { getMenuCategory, getProductSection, productMatchesSearch, groupProducts
 const ORDER_ITEM_NOTE_MAX_LENGTH = 280;
 
 const TABLE_AREA_LABELS: Record<TableArea, string> = {
-  INTERIOR: 'Interior',
-  TERRACE: 'Terraza',
+  INTERIOR: 'Binnen',
+  TERRACE: 'Terras',
 };
 
 const SECTION_COPY: Record<ProductSection, { title: string; placeholder: string; empty: string }> = {
   DRINKS: {
-    title: 'Bebidas',
-    placeholder: 'Buscar bebida, por ejemplo agua',
-    empty: 'No hay bebidas que coincidan',
+    title: 'Dranken',
+    placeholder: 'Zoek drank, bijvoorbeeld water',
+    empty: 'Geen bijpassende dranken',
   },
   FOOD: {
-    title: 'Comida',
-    placeholder: 'Buscar comida',
-    empty: 'No hay platos que coincidan',
+    title: 'Eten',
+    placeholder: 'Zoek eten',
+    empty: 'Geen bijpassende gerechten',
   },
 };
 
@@ -68,7 +68,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
   const loadProducts = async () => {
     const response = await fetch('/api/products');
     if (!response.ok) {
-      throw new Error('Failed to load products');
+      throw new Error('Producten laden is mislukt');
     }
 
     const data = (await response.json()) as Product[];
@@ -78,7 +78,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
   const loadMenus = async () => {
     const response = await fetch('/api/menus');
     if (!response.ok) {
-      throw new Error('Failed to load menus');
+      throw new Error('Menu\'s laden is mislukt');
     }
 
     const data = (await response.json()) as Menu[];
@@ -88,7 +88,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
   const loadTables = async () => {
     const response = await fetch('/api/tables');
     if (!response.ok) {
-      throw new Error('Failed to load tables');
+      throw new Error('Tafels laden is mislukt');
     }
 
     const data = await response.json();
@@ -215,7 +215,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
     const currentProduct = products.find(item => item.id === product.id);
 
     if (!currentProduct || !currentProduct.isEnabled || currentProduct.stock <= 0) {
-      pushToast({ message: `${product.name} no está disponible ahora mismo.`, title: 'Producto', variant: 'error' });
+      pushToast({ message: `${product.name} is nu niet beschikbaar.`, title: 'Product', variant: 'error' });
       return;
     }
 
@@ -281,7 +281,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
 
     const hasAllSelections = menu.courses.every(course => nextSelections[course.id]);
     if (!hasAllSelections) {
-      pushToast({ title: 'Menu', message: 'Ahora mismo no hay opciones disponibles para completar este menu.', variant: 'error' });
+      pushToast({ title: 'Menu', message: 'Er zijn momenteel geen opties beschikbaar om dit menu compleet te maken.', variant: 'error' });
       return;
     }
 
@@ -309,7 +309,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
     });
 
     if (selectedLines.some(line => !line.product)) {
-      pushToast({ title: 'Menu', message: 'Selecciona una opción en cada bloque del menu.', variant: 'error' });
+      pushToast({ title: 'Menu', message: 'Selecteer een optie in elk menublok.', variant: 'error' });
       return;
     }
 
@@ -358,11 +358,11 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
       closeCartNoteEditor();
       setLastCheckoutSummary(null);
       await Promise.all([refreshOrders(), loadTables(), loadProducts()]);
-      pushToast({ message: 'Pedido enviado correctamente a la mesa.', title: 'Pedido', variant: 'success' });
+      pushToast({ message: 'Bestelling is succesvol naar de tafel gestuurd.', title: 'Bestelling', variant: 'success' });
     } catch (error) {
       await loadProducts().catch(() => {});
-      const message = error instanceof Error ? error.message : 'No se pudo crear el pedido.';
-      pushToast({ message, title: 'Pedido', variant: 'error' });
+      const message = error instanceof Error ? error.message : 'Bestelling aanmaken is mislukt.';
+      pushToast({ message, title: 'Bestelling', variant: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -388,7 +388,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
           pushToast({ message: payload.error, title: 'Mesa', variant: 'error' });
           return;
         }
-        throw new Error('Failed to close table');
+        throw new Error('Tafel afsluiten is mislukt');
       }
 
       const data = await response.json();
@@ -398,9 +398,9 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
       setLastCheckoutSummary((data.summary ?? null) as TableCheckoutSummary | null);
       setCart([]);
       await Promise.all([refreshOrders(), loadTables()]);
-      pushToast({ message: 'Mesa cerrada correctamente con el total actualizado.', title: 'Mesa', variant: 'success' });
+      pushToast({ message: 'Tafel succesvol afgesloten met bijgewerkt totaalbedrag.', title: 'Tafel', variant: 'success' });
     } catch {
-      pushToast({ message: 'No se pudo cerrar la mesa.', title: 'Mesa', variant: 'error' });
+      pushToast({ message: 'De tafel kon niet worden afgesloten.', title: 'Tafel', variant: 'error' });
     } finally {
       setClosingTable(false);
     }
@@ -417,9 +417,9 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
       await deleteOrder(orderPendingDeletion.id);
       setOrderPendingDeletion(null);
       await Promise.all([refreshOrders(), loadTables()]);
-      pushToast({ message: 'Pedido eliminado correctamente.', title: 'Pedido', variant: 'success' });
+      pushToast({ message: 'Bestelling succesvol verwijderd.', title: 'Bestelling', variant: 'success' });
     } catch {
-      pushToast({ message: 'No se pudo eliminar el pedido.', title: 'Pedido', variant: 'error' });
+      pushToast({ message: 'Bestelling verwijderen is mislukt.', title: 'Bestelling', variant: 'error' });
     } finally {
       setDeletingOrder(false);
     }
@@ -456,7 +456,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
       });
 
       if (!response.ok) {
-        throw new Error('Failed to reopen table');
+        throw new Error('Tafel heropenen is mislukt');
       }
 
       const data = await response.json();
@@ -465,9 +465,9 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
       }
       setLastCheckoutSummary(null);
       await loadTables();
-      pushToast({ message: 'Mesa abierta para nuevos clientes.', title: 'Mesa', variant: 'success' });
+      pushToast({ message: 'Tafel geopend voor nieuwe gasten.', title: 'Tafel', variant: 'success' });
     } catch {
-      pushToast({ message: 'No se pudo abrir la mesa.', title: 'Mesa', variant: 'error' });
+      pushToast({ message: 'De tafel kon niet worden geopend.', title: 'Tafel', variant: 'error' });
     } finally {
       setReopeningTable(false);
     }
@@ -480,13 +480,13 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
           <div>
             {selectedTable ? (
               <div className={`order-cart-pill${selectedTable.isOpen ? '' : ' order-cart-pill--muted'}`}>
-                Mesa {selectedTable.number} · {TABLE_AREA_LABELS[selectedTable.area]} · {selectedTable.isOpen ? 'Abierta' : 'Cerrada'}
+                Tafel {selectedTable.number} · {TABLE_AREA_LABELS[selectedTable.area]} · {selectedTable.isOpen ? 'Open' : 'Gesloten'}
               </div>
             ) : (
-              <div className="order-cart-pill order-cart-pill--muted">Cargando mesa...</div>
+              <div className="order-cart-pill order-cart-pill--muted">Tafel laden...</div>
             )}
           </div>
-          {!isCustomerMode && <Link className="btn-secondary" href="/tables">Cambiar Mesa</Link>}
+          {!isCustomerMode && <Link className="btn-secondary" href="/tables">Tafel wisselen</Link>}
         </div>
       )}
 
@@ -494,20 +494,20 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
         <section className="table-session-card">
           <div className="table-session-header">
             <div>
-              <h2>Cuenta de la mesa</h2>
+              <h2>Tafelrekening</h2>
               <p className="table-session-subtitle">
                 {selectedTable.isOpen
-                  ? 'Controla la comanda activa y ciérrala cuando se marchen los clientes.'
-                  : 'La mesa está cerrada. Puedes reabrirla para un nuevo grupo de clientes.'}
+                  ? 'Beheer de actieve bestelling en sluit af wanneer de gasten vertrekken.'
+                  : 'De tafel is gesloten. Je kunt haar heropenen voor een nieuwe groep gasten.'}
               </p>
             </div>
             {selectedTable.isOpen ? (
               <button className="btn-primary" type="button" onClick={handleCloseTable} disabled={closingTable}>
-                {closingTable ? 'Cerrando mesa...' : 'Cerrar mesa y sacar total'}
+                {closingTable ? 'Tafel afsluiten...' : 'Tafel afsluiten en totaal tonen'}
               </button>
             ) : (
               <button className="btn-secondary" type="button" onClick={handleReopenTable} disabled={reopeningTable}>
-                {reopeningTable ? 'Abriendo mesa...' : 'Abrir mesa para nuevos clientes'}
+                {reopeningTable ? 'Tafel openen...' : 'Tafel openen voor nieuwe gasten'}
               </button>
             )}
           </div>
@@ -515,21 +515,21 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
           <div className="table-session-metrics">
             <div className="table-session-metric">
               <strong>{selectedTableOrders.length}</strong>
-              <span>Pedidos de esta mesa</span>
+              <span>Bestellingen van deze tafel</span>
             </div>
             <div className="table-session-metric">
               <strong>{currentTableItemCount}</strong>
-              <span>Artículos servidos</span>
+              <span>Geserveerde artikelen</span>
             </div>
             <div className="table-session-metric">
               <strong>{currentTableTotal.toFixed(2)} €</strong>
-              <span>Total acumulado</span>
+              <span>Opgeteld totaal</span>
             </div>
           </div>
 
           {selectedTable.lastClosedAt && !selectedTable.isOpen && (
             <p className="table-session-last-close">
-              Último cierre: {Number(selectedTable.lastClosedTotal ?? 0).toFixed(2)} € · {selectedTable.lastClosedOrderCount ?? 0} pedidos · {new Date(selectedTable.lastClosedAt).toLocaleString('es-ES')}
+              Laatste afsluiting: {Number(selectedTable.lastClosedTotal ?? 0).toFixed(2)} € · {selectedTable.lastClosedOrderCount ?? 0} bestellingen · {new Date(selectedTable.lastClosedAt).toLocaleString('nl-NL')}
             </p>
           )}
         </section>
@@ -539,9 +539,9 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
         <section className="table-checkout-card">
           <div className="table-session-header">
             <div>
-              <h2>Resumen de cierre</h2>
+              <h2>Afsluitoverzicht</h2>
               <p className="table-session-subtitle">
-                Comanda final de la mesa {lastCheckoutSummary.tableNumber} con el importe total listo para cobrar.
+                Eindbestelling van tafel {lastCheckoutSummary.tableNumber} met het totaalbedrag klaar om af te rekenen.
               </p>
             </div>
           </div>
@@ -549,15 +549,15 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
           <div className="table-session-metrics">
             <div className="table-session-metric">
               <strong>{lastCheckoutSummary.orderCount}</strong>
-              <span>Pedidos cerrados</span>
+              <span>Afgesloten bestellingen</span>
             </div>
             <div className="table-session-metric">
               <strong>{lastCheckoutSummary.itemCount}</strong>
-              <span>Artículos totales</span>
+              <span>Totaal aantal artikelen</span>
             </div>
             <div className="table-session-metric">
               <strong>{lastCheckoutSummary.total.toFixed(2)} €</strong>
-              <span>Total a cobrar</span>
+              <span>Totaal te innen</span>
             </div>
           </div>
 
@@ -575,10 +575,10 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
       {orderPendingDeletion && !isCustomerMode && (
         <ConfirmDialog
           open={Boolean(orderPendingDeletion)}
-          title="Eliminar pedido"
-          message={`¿Seguro que quieres borrar el pedido #${orderPendingDeletion.id}? Esta acción quitará el pedido de la comanda actual de la mesa.`}
-          confirmLabel={deletingOrder ? 'Eliminando...' : 'Sí, borrar pedido'}
-          cancelLabel="Cancelar"
+          title="Bestelling verwijderen"
+          message={`Weet je zeker dat je bestelling #${orderPendingDeletion.id} wilt verwijderen? Deze actie haalt de bestelling uit de huidige tafelbon.`}
+          confirmLabel={deletingOrder ? 'Verwijderen...' : 'Ja, bestelling verwijderen'}
+          cancelLabel="Annuleren"
           confirmVariant="danger"
           busy={deletingOrder}
           onConfirm={handleConfirmDeleteOrder}
@@ -586,7 +586,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
         >
           <div className="confirm-dialog-summary">
             <strong>{orderPendingDeletion.orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2)} €</strong>
-            <span>{orderPendingDeletion.orderItems.length} líneas en el pedido</span>
+            <span>{orderPendingDeletion.orderItems.length} regels in de bestelling</span>
           </div>
         </ConfirmDialog>
       )}
@@ -595,11 +595,11 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
 
       {missingSelectedTable && (
         <section className={`customer-order-error${isCustomerMode ? ' customer-order-error--customer' : ''}`}>
-          <h2>{isCustomerMode ? 'Este QR ya no esta disponible' : 'La mesa ya no esta disponible'}</h2>
+          <h2>{isCustomerMode ? 'Deze QR-code is niet meer beschikbaar' : 'Deze tafel is niet meer beschikbaar'}</h2>
           <p>
             {isCustomerMode
-              ? 'La mesa asociada a este codigo QR ya no existe o ha sido reconfigurada. Pide al personal un nuevo QR para continuar.'
-              : 'La mesa asociada a esta comanda ya no existe o ha sido reconfigurada desde administracion.'}
+              ? 'De tafel die bij deze QR-code hoort bestaat niet meer of is opnieuw ingesteld. Vraag het personeel om een nieuwe QR-code om verder te gaan.'
+              : 'De tafel die bij deze bon hoort bestaat niet meer of is vanuit het beheer opnieuw ingesteld.'}
           </p>
         </section>
       )}
@@ -607,12 +607,12 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
       {hasTableContext && !missingSelectedTable && isCustomerMode && selectedTable && (
         <div className="menu-layout">
           <header className="menu-hero">
-            <span className="menu-hero-badge">Mesa {selectedTable.number} · {TABLE_AREA_LABELS[selectedTable.area]}</span>
-            <h1 className="menu-hero-title">Nuestra Carta</h1>
-            <p className="menu-hero-tagline">Elige tus platos favoritos y envíalos directamente a tu mesa</p>
+            <span className="menu-hero-badge">Tafel {selectedTable.number} · {TABLE_AREA_LABELS[selectedTable.area]}</span>
+            <h1 className="menu-hero-title">Onze kaart</h1>
+            <p className="menu-hero-tagline">Kies je favoriete gerechten en stuur ze direct naar je tafel</p>
             {!selectedTable.isOpen && (
               <div className="menu-closed-notice">
-                <p>La mesa está cerrada ahora mismo. Pide al personal que la abra para empezar a pedir.</p>
+                <p>De tafel is momenteel gesloten. Vraag het personeel om de tafel te openen voordat je bestelt.</p>
               </div>
             )}
           </header>
@@ -623,8 +623,8 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
                 <section className="menu-section menu-section--specials">
                   <div className="menu-section-header">
                     <div className="menu-section-copy">
-                      <h2>Menus</h2>
-                      <p>Combina varios pasos del menú y deja que el cliente elija una opción por bloque.</p>
+                      <h2>Menu\'s</h2>
+                      <p>Combineer meerdere gangen en laat de klant per blok een optie kiezen.</p>
                     </div>
                   </div>
                   <div className="menu-bundle-grid">
@@ -632,22 +632,22 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
                       <article key={menu.id} className="menu-bundle-card">
                         <div className="menu-bundle-copy">
                           <div className="menu-bundle-topline">
-                            <span className="menu-bundle-badge">Menu configurable</span>
-                            <strong>{menu.courses.length} bloques</strong>
+                            <span className="menu-bundle-badge">Samenstelbaar menu</span>
+                            <strong>{menu.courses.length} blokken</strong>
                           </div>
                           <h3>{menu.name}</h3>
-                          <p>{menu.description?.trim() || 'Elige una opción en cada parte del menú antes de añadirlo a tu pedido.'}</p>
+                          <p>{menu.description?.trim() || 'Kies in elk deel van het menu een optie voordat je het toevoegt aan je bestelling.'}</p>
                           <ul className="menu-bundle-course-list">
                             {menu.courses.map(course => (
                               <li key={course.id}>
                                 <strong>{course.label}</strong>
-                                <span>{course.options.length} opciones</span>
+                                <span>{course.options.length} opties</span>
                               </li>
                             ))}
                           </ul>
                         </div>
                         <button className="btn-primary menu-bundle-button" type="button" onClick={() => openMenuPreview(menu)} disabled={!selectedTable.isOpen}>
-                          Elegir menu
+                          Menu kiezen
                         </button>
                       </article>
                     ))}
@@ -682,7 +682,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
                         ))}
                       </div>
                     ) : (
-                      <p className="menu-section-empty">No hay resultados en esta categoría</p>
+                      <p className="menu-section-empty">Geen resultaten in deze categorie</p>
                     )}
                   </section>
                 );
@@ -692,8 +692,8 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
             <aside className="menu-cart" id="order-cart-panel">
               <div className="menu-cart-header">
                 <div>
-                  <h2>Tu selección</h2>
-                  <span className="menu-cart-count">{cartItemCount} artículos</span>
+                  <h2>Jouw selectie</h2>
+                  <span className="menu-cart-count">{cartItemCount} artikelen</span>
                 </div>
                 <strong className="menu-cart-total">{cartTotal.toFixed(2)} €</strong>
               </div>
@@ -704,7 +704,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
                       <div className="cart-item-main">
                         <div className="cart-item-copy">
                           <span className="cart-item-name">{item.product.name}</span>
-                          {item.note && <span className="cart-item-note-preview">Nota: {item.note}</span>}
+                          {item.note && <span className="cart-item-note-preview">Opmerking: {item.note}</span>}
                         </div>
                         <span className="cart-item-line-total">{(item.product.price * item.quantity).toFixed(2)} €</span>
                       </div>
@@ -715,26 +715,26 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
                           <button type="button" onClick={() => updateQuantity(item.cartLineId, item.quantity + 1)}>+</button>
                         </div>
                         <button className="btn-ghost cart-item-note-button" type="button" onClick={() => openCartNoteEditor(item.cartLineId)}>
-                          {item.note ? 'Editar nota' : 'Notas'}
+                          {item.note ? 'Opmerking bewerken' : 'Opmerkingen'}
                         </button>
                         <button className="btn-ghost cart-item-remove" type="button" onClick={() => removeFromCart(item.cartLineId)}>✕</button>
                       </div>
                       {activeCartNoteId === item.cartLineId && (
                         <div className="cart-item-note-editor">
                           <label className="cart-item-note-field">
-                            <span>Notas para cocina o sala</span>
+                            <span>Opmerkingen voor keuken of bediening</span>
                             <textarea
                               value={cartNoteDraft}
                               onChange={event => setCartNoteDraft(event.target.value.slice(0, ORDER_ITEM_NOTE_MAX_LENGTH))}
-                              placeholder="Ejemplo: sin cebolla, muy hecha, sacar al final"
+                              placeholder="Bijvoorbeeld: zonder ui, goed doorbakken, als laatste serveren"
                               rows={3}
                             />
                           </label>
                           <div className="cart-item-note-actions">
                             <span>{cartNoteDraft.trim().length}/{ORDER_ITEM_NOTE_MAX_LENGTH}</span>
                             <div className="cart-item-note-buttons">
-                              <button className="btn-ghost" type="button" onClick={closeCartNoteEditor}>Cancelar</button>
-                              <button className="btn-secondary" type="button" onClick={saveCartItemNote}>Guardar nota</button>
+                              <button className="btn-ghost" type="button" onClick={closeCartNoteEditor}>Annuleren</button>
+                              <button className="btn-secondary" type="button" onClick={saveCartItemNote}>Opmerking opslaan</button>
                             </div>
                           </div>
                         </div>
@@ -744,13 +744,13 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
                 </ul>
               ) : (
                 <div className="empty-state menu-cart-empty">
-                  <p>Todavía no has añadido nada.</p>
-                  <p>Selecciona productos de la carta.</p>
+                  <p>Je hebt nog niets toegevoegd.</p>
+                  <p>Selecteer producten van de kaart.</p>
                 </div>
               )}
               <div className="cart-total">
                 <button className="btn-primary menu-cart-submit" onClick={handleSubmit} disabled={submitting || cart.length === 0 || !selectedTable.isOpen}>
-                  {submitting ? 'Enviando pedido...' : `Confirmar Pedido · ${cartTotal.toFixed(2)} €`}
+                  {submitting ? 'Bestelling versturen...' : `Bestelling bevestigen · ${cartTotal.toFixed(2)} €`}
                 </button>
               </div>
             </aside>
@@ -777,16 +777,16 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
                   <strong className="menu-product-modal-price">{previewProduct.price.toFixed(2)} €</strong>
 
                   <div className="menu-product-modal-copy">
-                    <h3>Qué lleva</h3>
-                    <p>{previewProduct.description?.trim() || 'Este producto todavía no tiene una descripción detallada.'}</p>
+                    <h3>Wat zit erin</h3>
+                    <p>{previewProduct.description?.trim() || 'Dit product heeft nog geen gedetailleerde beschrijving.'}</p>
                   </div>
 
                   <div className="menu-product-modal-actions">
                     <button className="btn-ghost" type="button" onClick={() => setPreviewProduct(null)}>
-                      Seguir mirando
+                      Verder kijken
                     </button>
                     <button className="btn-primary menu-product-modal-add" type="button" onClick={handleAddPreviewProduct} disabled={!selectedTable.isOpen}>
-                      Añadir al pedido
+                      Aan bestelling toevoegen
                     </button>
                   </div>
                 </div>
@@ -815,8 +815,8 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
                   <strong className="menu-product-modal-price">{previewMenuTotal.toFixed(2)} €</strong>
 
                   <div className="menu-product-modal-copy">
-                    <h3>Configura tu menu</h3>
-                    <p>{previewMenu.description?.trim() || 'Selecciona una opción en cada bloque para completar el pedido.'}</p>
+                    <h3>Stel je menu samen</h3>
+                    <p>{previewMenu.description?.trim() || 'Selecteer in elk blok een optie om de bestelling compleet te maken.'}</p>
                   </div>
 
                   <div className="menu-builder-course-list">
@@ -858,10 +858,10 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
                         setMenuSelections({});
                       }}
                     >
-                      Seguir mirando
+                      Verder kijken
                     </button>
                     <button className="btn-primary menu-product-modal-add" type="button" onClick={handleAddPreviewMenu} disabled={!selectedTable.isOpen}>
-                      Añadir menu al pedido
+                      Menu aan bestelling toevoegen
                     </button>
                   </div>
                 </div>
@@ -876,13 +876,13 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
           <section className="order-products">
             <div className="order-browser-card">
             <div className="order-browser-toolbar">
-              <div className="order-section-tabs" role="tablist" aria-label="Secciones del menú">
+              <div className="order-section-tabs" role="tablist" aria-label="Menusecties">
                 <button
                   className={`order-section-tab${activeSection === 'DRINKS' ? ' is-active' : ''}`}
                   type="button"
                   onClick={() => setActiveSection('DRINKS')}
                 >
-                  Bebidas
+                  Dranken
                   <span>{groupedProducts.DRINKS.length}</span>
                 </button>
                 <button
@@ -890,14 +890,14 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
                   type="button"
                   onClick={() => setActiveSection('FOOD')}
                 >
-                  Comida
+                  Eten
                   <span>{groupedProducts.FOOD.length}</span>
                 </button>
               </div>
 
               <div className="order-search-shell">
                 <label className="order-search-field">
-                  <span className="order-search-label">Buscar</span>
+                  <span className="order-search-label">Zoeken</span>
                   <input
                     type="text"
                     value={search}
@@ -907,7 +907,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
                 </label>
                 {search && (
                   <button className="btn-ghost order-search-clear" type="button" onClick={() => setSearch('')}>
-                    Limpiar
+                    Wissen
                   </button>
                 )}
               </div>
@@ -917,7 +917,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
               <div>
                 <h2>{SECTION_COPY[activeSection].title}</h2>
               </div>
-              <span className="order-section-count">{visibleProducts.length} productos</span>
+              <span className="order-section-count">{visibleProducts.length} producten</span>
             </div>
 
             <div className="product-grid product-grid--order">
@@ -927,7 +927,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
             </div>
 
             {selectedTable && !selectedTable.isOpen && (
-              <p className="order-prompt">La mesa está cerrada. Reábrela para empezar una nueva comanda.</p>
+              <p className="order-prompt">De tafel is gesloten. Heropen ze om een nieuwe bon te starten.</p>
             )}
 
             {visibleProducts.length === 0 && (
@@ -939,10 +939,10 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
           <aside className="order-cart order-cart--sticky" id="order-cart-panel">
             <div className="order-cart-header">
               <div>
-                <h2>Tu Pedido</h2>
-                <span className="order-cart-subtitle">{cartItemCount} artículos seleccionados</span>
+                <h2>Jouw bestelling</h2>
+                <span className="order-cart-subtitle">{cartItemCount} geselecteerde artikelen</span>
               </div>
-              <strong>Total: &euro;{cartTotal.toFixed(2)}</strong>
+              <strong>Totaal: &euro;{cartTotal.toFixed(2)}</strong>
             </div>
             {cart.length > 0 ? (
               <ul className="cart-list">
@@ -951,7 +951,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
                     <div className="cart-item-main">
                       <div className="cart-item-copy">
                         <span className="cart-item-name">{item.product.name}</span>
-                        {item.note && <span className="cart-item-note-preview">Nota: {item.note}</span>}
+                        {item.note && <span className="cart-item-note-preview">Opmerking: {item.note}</span>}
                       </div>
                       <span className="cart-item-line-total">&euro;{(item.product.price * item.quantity).toFixed(2)}</span>
                     </div>
@@ -962,26 +962,26 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
                         <button type="button" onClick={() => updateQuantity(item.cartLineId, item.quantity + 1)}>+</button>
                       </div>
                       <button className="btn-ghost cart-item-note-button" type="button" onClick={() => openCartNoteEditor(item.cartLineId)}>
-                        {item.note ? 'Editar nota' : 'Notas'}
+                        {item.note ? 'Opmerking bewerken' : 'Opmerkingen'}
                       </button>
                       <button className="btn-ghost cart-item-remove" type="button" onClick={() => removeFromCart(item.cartLineId)}>✕</button>
                     </div>
                     {activeCartNoteId === item.cartLineId && (
                       <div className="cart-item-note-editor">
                         <label className="cart-item-note-field">
-                          <span>Notas para cocina o sala</span>
+                          <span>Opmerkingen voor keuken of bediening</span>
                           <textarea
                             value={cartNoteDraft}
                             onChange={event => setCartNoteDraft(event.target.value.slice(0, ORDER_ITEM_NOTE_MAX_LENGTH))}
-                            placeholder="Ejemplo: sin cebolla, muy hecha, sacar al final"
+                            placeholder="Bijvoorbeeld: zonder ui, goed doorbakken, als laatste serveren"
                             rows={3}
                           />
                         </label>
                         <div className="cart-item-note-actions">
                           <span>{cartNoteDraft.trim().length}/{ORDER_ITEM_NOTE_MAX_LENGTH}</span>
                           <div className="cart-item-note-buttons">
-                            <button className="btn-ghost" type="button" onClick={closeCartNoteEditor}>Cancelar</button>
-                            <button className="btn-secondary" type="button" onClick={saveCartItemNote}>Guardar nota</button>
+                              <button className="btn-ghost" type="button" onClick={closeCartNoteEditor}>Annuleren</button>
+                              <button className="btn-secondary" type="button" onClick={saveCartItemNote}>Opmerking opslaan</button>
                           </div>
                         </div>
                       </div>
@@ -991,13 +991,13 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
               </ul>
             ) : (
               <div className="empty-state order-cart-empty-state">
-                <p>Todavia no has anadido productos.</p>
-                <p>Selecciona articulos del menu y apareceran aqui al momento.</p>
+                <p>Je hebt nog geen producten toegevoegd.</p>
+                <p>Selecteer artikelen van het menu en ze verschijnen hier meteen.</p>
               </div>
             )}
             <div className="cart-total">
               <button className="btn-primary" onClick={handleSubmit} disabled={submitting || cart.length === 0 || !initialTableId || !selectedTable?.isOpen}>
-                {submitting ? 'Enviando...' : 'Confirmar Pedido'}
+                {submitting ? 'Versturen...' : 'Bestelling bevestigen'}
               </button>
             </div>
           </aside>
@@ -1006,11 +1006,11 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
 
       {!isCustomerMode && (
       <section className={`order-history${isCustomerMode ? ' order-history--customer' : ''}`}>
-        <h2>{selectedTable ? (isCustomerMode ? 'Pedidos enviados desde esta mesa' : 'Comanda activa de la mesa') : 'Últimos pedidos del local'}</h2>
+        <h2>{selectedTable ? (isCustomerMode ? 'Bestellingen verzonden vanaf deze tafel' : 'Actieve tafelbon') : 'Laatste bestellingen van de zaak'}</h2>
         {loading ? (
-          <p>Cargando...</p>
+          <p>Laden...</p>
         ) : (selectedTable ? selectedTableOrders : orders).length === 0 ? (
-          <p className="empty-state">{selectedTable ? 'Esta mesa todavía no tiene pedidos en la sesión actual' : 'No hay pedidos aún'}</p>
+          <p className="empty-state">{selectedTable ? 'Deze tafel heeft nog geen bestellingen in de huidige sessie' : 'Er zijn nog geen bestellingen'}</p>
         ) : (
           <div className="orders-grid">
             {(selectedTable ? selectedTableOrders : orders).slice(0, 10).map(order => (
