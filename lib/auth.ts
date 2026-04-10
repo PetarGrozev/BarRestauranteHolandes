@@ -60,6 +60,10 @@ export function getSuperAdminAccessPassword() {
   return process.env.SUPERADMIN_PASSWORD || '';
 }
 
+export function getLegacyAdminAccessPassword() {
+  return process.env.ADMIN_PASSWORD || '';
+}
+
 export function isAdminPasswordFormatValid(password: string) {
   return password.trim().length >= ADMIN_PASSWORD_MIN_LENGTH;
 }
@@ -69,6 +73,10 @@ export function hashAdminPassword(password: string) {
     throw new Error(`La contraseña debe tener al menos ${ADMIN_PASSWORD_MIN_LENGTH} caracteres.`);
   }
 
+  return hashAdminPasswordUnchecked(password);
+}
+
+export function hashAdminPasswordUnchecked(password: string) {
   const salt = randomBytes(16).toString('hex');
   const hash = scryptSync(password, salt, 64).toString('hex');
   return `scrypt:${salt}:${hash}`;
@@ -87,6 +95,16 @@ export function isStoredAdminPasswordValid(password: string, storedHash: string 
 
   const computedHash = scryptSync(password, salt, 64).toString('hex');
   return safeEqual(computedHash, expectedHash);
+}
+
+export function isLegacyAdminPasswordValid(password: string) {
+  const configuredPassword = getLegacyAdminAccessPassword();
+
+  if (!configuredPassword || !password) {
+    return false;
+  }
+
+  return safeEqual(password, configuredPassword);
 }
 
 function signPayload(payload: string) {
