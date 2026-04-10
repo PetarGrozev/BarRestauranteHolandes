@@ -14,9 +14,9 @@ const LiveNotifications: React.FC = () => {
       const newOrders = orders.slice(0, orders.length - prevCountRef.current);
       const msgs = newOrders.map((order: Order) => {
         const items = order.orderItems
-          .map(i => `${i.product?.name ?? 'Producto'} x${i.quantity}`)
+          .map(i => `${i.product?.name ?? 'Product'} x${i.quantity}`)
           .join(', ');
-        return `Nuevo pedido #${order.id}: ${items}`;
+        return `Nieuwe bestelling #${order.id}: ${items}`;
       });
       setNotifications(prev => [...msgs, ...prev].slice(0, 10));
     }
@@ -27,7 +27,7 @@ const LiveNotifications: React.FC = () => {
 
   return (
     <div className="live-notifications">
-      <h3>Notificaciones</h3>
+      <h3>Meldingen</h3>
       <ul>
         {notifications.map((msg, i) => (
           <li key={i}>{msg}</li>

@@ -84,32 +84,32 @@ const AdminControls: React.FC = () => {
 
   const adminCards = [
     {
-      title: 'Productos',
-      description: 'Gestiona el menú de productos',
+      title: 'Producten',
+      description: 'Beheer de productkaart',
       href: '/admin/products',
       accent: 'products' as const,
     },
     {
-      title: 'Administradores',
-      description: 'Gestiona cuentas de admin',
+      title: 'Beheerders',
+      description: 'Beheer adminaccounts',
       href: '/admin/admins',
       accent: 'admins' as const,
     },
     {
-      title: 'Nuevo Producto',
-      description: 'Añade un producto al menú',
+      title: 'Nieuw product',
+      description: 'Voeg een product toe aan de kaart',
       href: '/admin/products/create',
       accent: 'create' as const,
     },
     {
-      title: 'Mesas',
-      description: 'Configura interior y terraza',
+      title: 'Tafels',
+      description: 'Stel binnen en terras in',
       href: '/admin/tables',
       accent: 'tables' as const,
     },
     {
-      title: 'Menus',
-      description: 'Crea menus con opciones por entrante, principal, postre o bebida',
+      title: 'Menu\'s',
+      description: 'Maak menu\'s met opties per voorgerecht, hoofdgerecht, dessert of drank',
       href: '/admin/menus',
       accent: 'menus' as const,
     },
@@ -151,18 +151,18 @@ const AdminControls: React.FC = () => {
             </span>
           </div>
           <div className="admin-card-copy">
-            <h3>Exportar CSV</h3>
-            <p>Descarga ventas agrupadas por producto en diario, semanal o mensual.</p>
+            <h3>CSV exporteren</h3>
+            <p>Download verkoop per product, gegroepeerd per dag, week of maand.</p>
           </div>
           <div className="admin-export-actions">
             <button className="btn-secondary" type="button" onClick={() => handleExportCSV('daily')}>
-              Diario
+              Dagelijks
             </button>
             <button className="btn-secondary" type="button" onClick={() => handleExportCSV('weekly')}>
-              Semanal
+              Wekelijks
             </button>
             <button className="btn-secondary" type="button" onClick={() => handleExportCSV('monthly')}>
-              Mensual
+              Maandelijks
             </button>
           </div>
         </div>

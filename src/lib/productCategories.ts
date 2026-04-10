@@ -78,12 +78,12 @@ export const MENU_CATEGORIES: MenuCategory[] = [
 ];
 
 export const MENU_CATEGORY_META: Record<MenuCategory, { label: string; icon: string; tagline: string }> = {
-  HAMBURGUESAS: { label: 'Hamburguesas', icon: '🍔', tagline: 'Artesanales y jugosas' },
-  SANDWICHES:   { label: 'Sándwiches',   icon: '🥪', tagline: 'Crujientes y sabrosos' },
-  PASTAS:       { label: 'Pastas',        icon: '🍝', tagline: 'Frescas del día' },
-  BEBIDAS:      { label: 'Bebidas',       icon: '🥤', tagline: 'Refrescos y cervezas' },
-  VINOS:        { label: 'Vinos',         icon: '🍷', tagline: 'Selección de bodega' },
-  OTROS:        { label: 'Especialidades', icon: '🍽️', tagline: 'Más delicias' },
+  HAMBURGUESAS: { label: 'Burgers', icon: '🍔', tagline: 'Ambachtelijk en sappig' },
+  SANDWICHES:   { label: 'Sandwiches', icon: '🥪', tagline: 'Knapperig en smaakvol' },
+  PASTAS:       { label: 'Pasta\'s', icon: '🍝', tagline: 'Vers van de dag' },
+  BEBIDAS:      { label: 'Dranken', icon: '🥤', tagline: 'Frisdrank en bier' },
+  VINOS:        { label: 'Wijnen', icon: '🍷', tagline: 'Selectie uit de kelder' },
+  OTROS:        { label: 'Specialiteiten', icon: '🍽️', tagline: 'Nog meer lekkers' },
 };
 
 const MENU_KEYWORDS: Record<Exclude<MenuCategory, 'OTROS'>, string[]> = {

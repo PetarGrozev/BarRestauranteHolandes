@@ -24,7 +24,7 @@ const INITIAL_FORM: RestaurantFormState = {
 };
 
 function formatDate(value: string) {
-  return new Date(value).toLocaleDateString('es-ES', {
+  return new Date(value).toLocaleDateString('nl-NL', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -46,13 +46,13 @@ export default function SuperAdminPage() {
     try {
       const response = await fetch('/api/superadmin/restaurants');
       if (!response.ok) {
-        throw new Error('No se pudieron cargar los restaurantes.');
+        throw new Error('Restaurants laden is mislukt.');
       }
 
       const payload = await response.json() as RestaurantSummary[];
       setRestaurants(payload);
     } catch (error) {
-      pushToast({ title: 'Plataforma', message: error instanceof Error ? error.message : 'No se pudieron cargar los restaurantes.', variant: 'error' });
+      pushToast({ title: 'Platform', message: error instanceof Error ? error.message : 'Restaurants laden is mislukt.', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -66,7 +66,7 @@ export default function SuperAdminPage() {
     event.preventDefault();
 
     if (form.adminPassword !== form.adminPasswordConfirm) {
-      pushToast({ title: 'Plataforma', message: 'Las contraseñas del admin inicial no coinciden.', variant: 'error' });
+      pushToast({ title: 'Platform', message: 'De wachtwoorden van de eerste beheerder komen niet overeen.', variant: 'error' });
       return;
     }
 
@@ -87,15 +87,15 @@ export default function SuperAdminPage() {
 
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
-        throw new Error(payload?.message ?? 'No se pudo crear el restaurante.');
+        throw new Error(payload?.message ?? 'Restaurant aanmaken is mislukt.');
       }
 
       const created = await response.json() as RestaurantSummary;
       setRestaurants(prev => [created, ...prev]);
       setForm(INITIAL_FORM);
-      pushToast({ title: 'Plataforma', message: 'Restaurante creado y admin inicial asignado.', variant: 'success' });
+      pushToast({ title: 'Platform', message: 'Restaurant aangemaakt en eerste beheerder toegewezen.', variant: 'success' });
     } catch (error) {
-      pushToast({ title: 'Plataforma', message: error instanceof Error ? error.message : 'No se pudo crear el restaurante.', variant: 'error' });
+      pushToast({ title: 'Platform', message: error instanceof Error ? error.message : 'Restaurant aanmaken is mislukt.', variant: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -122,15 +122,15 @@ export default function SuperAdminPage() {
 
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
-        throw new Error(payload?.message ?? 'No se pudo actualizar el restaurante.');
+        throw new Error(payload?.message ?? 'Restaurant bijwerken is mislukt.');
       }
 
       const updated = await response.json() as RestaurantSummary;
       setRestaurants(prev => prev.map(item => item.id === updated.id ? updated : item));
       setEditing(prev => prev && prev.id === updated.id ? updated : prev);
-      pushToast({ title: 'Plataforma', message: 'Restaurante actualizado.', variant: 'success' });
+      pushToast({ title: 'Platform', message: 'Restaurant bijgewerkt.', variant: 'success' });
     } catch (error) {
-      pushToast({ title: 'Plataforma', message: error instanceof Error ? error.message : 'No se pudo actualizar el restaurante.', variant: 'error' });
+      pushToast({ title: 'Platform', message: error instanceof Error ? error.message : 'Restaurant bijwerken is mislukt.', variant: 'error' });
     } finally {
       setSavingId(null);
     }
@@ -140,17 +140,17 @@ export default function SuperAdminPage() {
     <div className="superadmin-page">
       <div className="superadmin-hero">
         <div className="superadmin-hero-copy">
-          <h1>Plataforma multi-restaurante</h1>
-          <p className="page-subtitle">Crea restaurantes, ajusta su branding y controla accesos desde un único panel más compacto.</p>
+          <h1>Multi-restaurantplatform</h1>
+          <p className="page-subtitle">Maak restaurants aan, pas hun branding aan en beheer toegangen vanuit één compact paneel.</p>
         </div>
         <div className="superadmin-stats">
           <div className="superadmin-stat-card">
             <strong>{restaurants.length}</strong>
-            <span>Restaurantes</span>
+            <span>Restaurants</span>
           </div>
           <div className="superadmin-stat-card superadmin-stat-card--accent">
             <strong>{activeCount}</strong>
-            <span>Activos</span>
+            <span>Actief</span>
           </div>
         </div>
       </div>
@@ -158,18 +158,18 @@ export default function SuperAdminPage() {
       <div className="superadmin-layout">
         <section className="admins-panel admins-panel--form superadmin-panel superadmin-panel--create">
           <div className="admins-panel-copy">
-            <h2>Crear restaurante</h2>
-            <p>Configura el entorno y el primer acceso sin salir de esta vista.</p>
+            <h2>Restaurant aanmaken</h2>
+            <p>Stel de omgeving en de eerste toegang in zonder deze pagina te verlaten.</p>
           </div>
 
           <form className="admin-form superadmin-create-form" onSubmit={handleCreate}>
             <div className="superadmin-form-grid">
             <label className="admins-field">
-              <span>Nombre</span>
+              <span>Naam</span>
               <input value={form.name} onChange={event => setForm(prev => ({ ...prev, name: event.target.value }))} placeholder="Casa Aurora" required />
             </label>
             <label className="admins-field">
-              <span>Slug o código</span>
+              <span>Slug of code</span>
               <input value={form.slug} onChange={event => setForm(prev => ({ ...prev, slug: event.target.value }))} placeholder="casa-aurora" required />
             </label>
             <label className="admins-field superadmin-form-span">
@@ -177,20 +177,20 @@ export default function SuperAdminPage() {
               <input value={form.logoUrl} onChange={event => setForm(prev => ({ ...prev, logoUrl: event.target.value }))} placeholder="/logos/casa-aurora.png" />
             </label>
             <label className="admins-field">
-              <span>Email admin inicial</span>
+              <span>E-mailadres eerste beheerder</span>
               <input type="email" value={form.adminEmail} onChange={event => setForm(prev => ({ ...prev, adminEmail: event.target.value }))} placeholder="admin@restaurante.com" required />
             </label>
             <label className="admins-field">
-              <span>Contraseña inicial</span>
-              <input type="password" value={form.adminPassword} onChange={event => setForm(prev => ({ ...prev, adminPassword: event.target.value }))} placeholder="Minimo 8 caracteres" minLength={8} required />
+              <span>Eerste wachtwoord</span>
+              <input type="password" value={form.adminPassword} onChange={event => setForm(prev => ({ ...prev, adminPassword: event.target.value }))} placeholder="Minimaal 8 tekens" minLength={8} required />
             </label>
             <label className="admins-field">
-              <span>Confirmar contraseña inicial</span>
-              <input type="password" value={form.adminPasswordConfirm} onChange={event => setForm(prev => ({ ...prev, adminPasswordConfirm: event.target.value }))} placeholder="Repite la contraseña inicial" minLength={8} required />
+              <span>Eerste wachtwoord bevestigen</span>
+              <input type="password" value={form.adminPasswordConfirm} onChange={event => setForm(prev => ({ ...prev, adminPasswordConfirm: event.target.value }))} placeholder="Herhaal het eerste wachtwoord" minLength={8} required />
             </label>
             </div>
             <button className="btn-primary" type="submit" disabled={submitting}>
-              {submitting ? 'Creando...' : 'Crear restaurante'}
+              {submitting ? 'Aanmaken...' : 'Restaurant aanmaken'}
             </button>
           </form>
         </section>
@@ -198,14 +198,14 @@ export default function SuperAdminPage() {
         <section className="admins-panel admins-panel--list superadmin-panel superadmin-panel--list">
           <div className="admins-panel-copy admins-panel-copy--list superadmin-list-toolbar">
             <div>
-              <h2>Entornos disponibles</h2>
-              <p>Edita nombre, slug y branding sin ocupar más espacio del necesario.</p>
+              <h2>Beschikbare omgevingen</h2>
+              <p>Bewerk naam, slug en branding zonder onnodig veel ruimte in te nemen.</p>
             </div>
-            <span className="superadmin-list-count">{restaurants.length} entornos</span>
+            <span className="superadmin-list-count">{restaurants.length} omgevingen</span>
           </div>
 
           {loading ? (
-            <p>Cargando restaurantes...</p>
+            <p>Restaurants laden...</p>
           ) : restaurants.length > 0 ? (
             <div className="superadmin-restaurant-list">
               {restaurants.map(restaurant => {
@@ -220,20 +220,20 @@ export default function SuperAdminPage() {
                         <p>{restaurant.slug}</p>
                       </div>
                       <button className={`superadmin-status-badge${current.isActive ? ' is-active' : ''}`} type="button" onClick={() => setEditing(prev => prev?.id === restaurant.id ? { ...prev, isActive: !prev.isActive } : { ...restaurant, isActive: !restaurant.isActive })}>
-                        {current.isActive ? 'Activo' : 'Inactivo'}
+                        {current.isActive ? 'Actief' : 'Inactief'}
                       </button>
                     </div>
 
                     <div className="superadmin-metrics">
-                      <span>{restaurant.counts.admins} admins</span>
-                      <span>{restaurant.counts.products} productos</span>
-                      <span>{restaurant.counts.tables} mesas</span>
-                      <span>{restaurant.counts.orders} pedidos</span>
+                      <span>{restaurant.counts.admins} beheerders</span>
+                      <span>{restaurant.counts.products} producten</span>
+                      <span>{restaurant.counts.tables} tafels</span>
+                      <span>{restaurant.counts.orders} bestellingen</span>
                     </div>
 
                     <div className="superadmin-edit-grid">
                       <label className="admins-field">
-                        <span>Nombre</span>
+                        <span>Naam</span>
                         <input value={current.name} onChange={event => setEditing(prev => prev?.id === restaurant.id ? { ...prev, name: event.target.value } : { ...restaurant, name: event.target.value })} />
                       </label>
                       <label className="admins-field">
@@ -247,20 +247,20 @@ export default function SuperAdminPage() {
                     </div>
 
                     <div className="superadmin-restaurant-footer">
-                      <span>Alta: {formatDate(restaurant.createdAt)}</span>
+                      <span>Aangemaakt: {formatDate(restaurant.createdAt)}</span>
                       <div className="superadmin-restaurant-actions">
                         {!isEditing && (
                           <button className="btn-ghost" type="button" onClick={() => handleEditStart(restaurant)}>
-                            Editar
+                            Bewerken
                           </button>
                         )}
                         {isEditing && (
                           <>
                             <button className="btn-ghost" type="button" onClick={() => setEditing(null)}>
-                              Cancelar
+                              Annuleren
                             </button>
                             <button className="btn-primary" type="button" disabled={savingId === restaurant.id} onClick={() => handleEditSave(current)}>
-                              {savingId === restaurant.id ? 'Guardando...' : 'Guardar'}
+                              {savingId === restaurant.id ? 'Opslaan...' : 'Opslaan'}
                             </button>
                           </>
                         )}
@@ -272,8 +272,8 @@ export default function SuperAdminPage() {
             </div>
           ) : (
             <div className="empty-state admins-empty-state">
-              <strong>No hay restaurantes configurados.</strong>
-              <p>Crea el primero desde el formulario lateral para habilitar un nuevo entorno.</p>
+              <strong>Er zijn geen restaurants ingesteld.</strong>
+              <p>Maak het eerste restaurant aan via het formulier aan de zijkant om een nieuwe omgeving te activeren.</p>
             </div>
           )}
         </section>

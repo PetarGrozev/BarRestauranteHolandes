@@ -6,7 +6,7 @@ import useAppToasts from '@/hooks/useAppToasts';
 import type { Admin } from '@/types';
 
 function formatAdminDate(value: string) {
-  return new Date(value).toLocaleDateString('es-ES', {
+  return new Date(value).toLocaleDateString('nl-NL', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -34,7 +34,7 @@ const AdminsPage = () => {
       const data = (await res.json()) as Admin[];
       setAdmins(data);
     } catch {
-      pushToast({ message: 'No se pudo cargar la lista de administradores.', title: 'Administradores', variant: 'error' });
+      pushToast({ message: 'De beheerderslijst kon niet worden geladen.', title: 'Beheerders', variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -49,7 +49,7 @@ const AdminsPage = () => {
     if (!email.trim() || !password.trim() || !confirmPassword.trim()) return;
 
     if (password !== confirmPassword) {
-      pushToast({ message: 'Las contraseñas no coinciden.', title: 'Administradores', variant: 'error' });
+      pushToast({ message: 'De wachtwoorden komen niet overeen.', title: 'Beheerders', variant: 'error' });
       return;
     }
 
@@ -72,24 +72,24 @@ const AdminsPage = () => {
       setEmail('');
       setPassword('');
       setConfirmPassword('');
-      pushToast({ message: 'Administrador añadido correctamente.', title: 'Administradores', variant: 'success' });
+      pushToast({ message: 'Beheerder is succesvol toegevoegd.', title: 'Beheerders', variant: 'success' });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Error al añadir administrador.';
-      pushToast({ message, title: 'Administradores', variant: 'error' });
+      const message = error instanceof Error ? error.message : 'Beheerder toevoegen is mislukt.';
+      pushToast({ message, title: 'Beheerders', variant: 'error' });
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleResetPassword = async (adminId: number, adminEmail: string) => {
-    const nextPassword = window.prompt(`Nueva contraseña para ${adminEmail}`, '');
+    const nextPassword = window.prompt(`Nieuw wachtwoord voor ${adminEmail}`, '');
 
     if (nextPassword === null) {
       return;
     }
 
     if (!nextPassword.trim()) {
-      pushToast({ message: 'La contraseña no puede estar vacía.', title: 'Administradores', variant: 'error' });
+      pushToast({ message: 'Het wachtwoord mag niet leeg zijn.', title: 'Beheerders', variant: 'error' });
       return;
     }
 
@@ -107,10 +107,10 @@ const AdminsPage = () => {
         throw new Error(payload?.message ?? 'Failed');
       }
 
-      pushToast({ message: `Contraseña actualizada para ${adminEmail}.`, title: 'Administradores', variant: 'success' });
+      pushToast({ message: `Wachtwoord bijgewerkt voor ${adminEmail}.`, title: 'Beheerders', variant: 'success' });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Error al actualizar contraseña.';
-      pushToast({ message, title: 'Administradores', variant: 'error' });
+      const message = error instanceof Error ? error.message : 'Wachtwoord bijwerken is mislukt.';
+      pushToast({ message, title: 'Beheerders', variant: 'error' });
     } finally {
       setResettingAdminId(null);
     }
@@ -132,10 +132,10 @@ const AdminsPage = () => {
       }
 
       setAdmins(prev => prev.filter(a => a.id !== adminId));
-      pushToast({ message: 'Administrador eliminado correctamente.', title: 'Administradores', variant: 'success' });
+      pushToast({ message: 'Beheerder is succesvol verwijderd.', title: 'Beheerders', variant: 'success' });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Error al eliminar administrador.';
-      pushToast({ message, title: 'Administradores', variant: 'error' });
+      const message = error instanceof Error ? error.message : 'Beheerder verwijderen is mislukt.';
+      pushToast({ message, title: 'Beheerders', variant: 'error' });
     } finally {
       setRemovingAdminId(null);
     }
@@ -145,20 +145,20 @@ const AdminsPage = () => {
     <div className="admins-page">
       <div className="admins-page-hero">
         <div>
-          <h1>ADMINISTRADORES</h1>
-          <p className="page-subtitle">Gestiona los accesos internos del sistema desde un único panel.</p>
+          <h1>BEHEERDERS</h1>
+          <p className="page-subtitle">Beheer alle interne toegangen vanuit één paneel.</p>
         </div>
         <div className="admins-page-stat">
           <strong>{admins.length}</strong>
-          <span>Accesos activos</span>
+          <span>Actieve toegangen</span>
         </div>
       </div>
 
       <div className="admins-layout">
         <section className="admins-panel admins-panel--form">
           <div className="admins-panel-copy">
-            <h2>Añadir administrador</h2>
-            <p>Introduce el correo y una contraseña propia para ese usuario.</p>
+            <h2>Beheerder toevoegen</h2>
+            <p>Vul het e-mailadres en een eigen wachtwoord voor deze gebruiker in.</p>
           </div>
 
           <form className="admin-form" onSubmit={handleAdd}>
@@ -173,10 +173,10 @@ const AdminsPage = () => {
               />
             </label>
             <label className="admins-field">
-              <span>Contraseña</span>
+              <span>Wachtwoord</span>
               <input
                 type="password"
-                placeholder="Minimo 8 caracteres"
+                placeholder="Minimaal 8 tekens"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 minLength={8}
@@ -184,10 +184,10 @@ const AdminsPage = () => {
               />
             </label>
             <label className="admins-field">
-              <span>Confirmar contraseña</span>
+              <span>Wachtwoord bevestigen</span>
               <input
                 type="password"
-                placeholder="Repite la contraseña"
+                placeholder="Herhaal het wachtwoord"
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 minLength={8}
@@ -195,19 +195,19 @@ const AdminsPage = () => {
               />
             </label>
             <button className="btn-primary" type="submit" disabled={submitting}>
-              {submitting ? 'Añadiendo...' : 'Añadir Admin'}
+              {submitting ? 'Toevoegen...' : 'Beheerder toevoegen'}
             </button>
           </form>
         </section>
 
         <section className="admins-panel admins-panel--list">
           <div className="admins-panel-copy admins-panel-copy--list">
-            <h2>Accesos autorizados</h2>
-            <p>Revisa quién puede entrar al área de administración y elimina accesos cuando haga falta.</p>
+            <h2>Geautoriseerde toegangen</h2>
+            <p>Controleer wie toegang heeft tot het beheergebied en verwijder toegangen wanneer nodig.</p>
           </div>
 
           {loading ? (
-            <p>Cargando administradores...</p>
+            <p>Beheerders laden...</p>
           ) : admins.length > 0 ? (
             <ul className="admin-list">
               {admins.map(admin => (
@@ -216,15 +216,15 @@ const AdminsPage = () => {
                     <span className="admin-list-avatar" aria-hidden="true">{admin.email.slice(0, 1).toUpperCase()}</span>
                     <div className="admin-list-copy">
                       <strong>{admin.email}</strong>
-                      <span>Alta: {formatAdminDate(admin.createdAt)}</span>
+                      <span>Aangemaakt: {formatAdminDate(admin.createdAt)}</span>
                     </div>
                   </div>
                   <div className="admin-list-actions">
                     <button className="btn-secondary" type="button" onClick={() => handleResetPassword(admin.id, admin.email)} disabled={resettingAdminId === admin.id}>
-                      {resettingAdminId === admin.id ? 'Guardando...' : 'Cambiar clave'}
+                      {resettingAdminId === admin.id ? 'Opslaan...' : 'Wachtwoord wijzigen'}
                     </button>
                     <button className="btn-ghost" type="button" onClick={() => handleRemove(admin.id)} disabled={removingAdminId === admin.id}>
-                      {removingAdminId === admin.id ? 'Eliminando...' : 'Eliminar'}
+                      {removingAdminId === admin.id ? 'Verwijderen...' : 'Verwijderen'}
                     </button>
                   </div>
                 </li>
@@ -232,8 +232,8 @@ const AdminsPage = () => {
             </ul>
           ) : (
             <div className="empty-state admins-empty-state">
-              <strong>No hay administradores registrados.</strong>
-              <p>Añade el primer correo autorizado desde el formulario lateral.</p>
+              <strong>Er zijn geen beheerders geregistreerd.</strong>
+              <p>Voeg het eerste geautoriseerde e-mailadres toe via het formulier aan de zijkant.</p>
             </div>
           )}
         </section>

@@ -15,9 +15,9 @@ interface ProductCardProps {
 }
 
 const TARGET_LABELS: Record<string, string> = {
-  KITCHEN: 'Cocina',
-  STAFF: 'Sala',
-  BOTH: 'Ambos',
+  KITCHEN: 'Keuken',
+  STAFF: 'Bediening',
+  BOTH: 'Beide',
 };
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onOrder, onPreview, onEdit, onDelete, onToggleEnabled, mode = 'order', disabled = false }) => {
@@ -49,7 +49,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onOrder, onPreview, 
           <div className="product-pick-action-bar">
             <span className="product-pick-price">&euro;{product.price.toFixed(2)}</span>
             <button className="product-pick-add-button" type="button" onClick={() => onOrder(product)} disabled={disabled}>
-              Añadir
+              Toevoegen
             </button>
           </div>
         </article>
@@ -92,10 +92,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onOrder, onPreview, 
         {product.description && <p className="product-card-desc">{product.description}</p>}
         <div className="product-card-badges">
           <span className={`product-card-badge ${product.stock > 0 ? 'product-card-badge--stock' : 'product-card-badge--out'}`}>
-            {product.stock > 0 ? `Stock: ${product.stock}` : 'Sin stock'}
+            {product.stock > 0 ? `Voorraad: ${product.stock}` : 'Geen voorraad'}
           </span>
           <span className={`product-card-badge ${product.isEnabled ? 'product-card-badge--enabled' : 'product-card-badge--disabled'}`}>
-            {product.isEnabled ? 'Habilitado' : 'Deshabilitado'}
+            {product.isEnabled ? 'Ingeschakeld' : 'Uitgeschakeld'}
           </span>
         </div>
         <div className="product-card-meta">
@@ -106,13 +106,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onOrder, onPreview, 
       <div className="product-card-actions">
         {mode === 'admin' && (
           <>
-            {onEdit && <button className="btn-secondary" type="button" onClick={() => onEdit(product)}>Editar</button>}
+            {onEdit && <button className="btn-secondary" type="button" onClick={() => onEdit(product)}>Bewerken</button>}
             {onToggleEnabled && (
               <button className="btn-ghost" type="button" onClick={() => onToggleEnabled(product)}>
-                {product.isEnabled ? 'Deshabilitar' : 'Habilitar'}
+                {product.isEnabled ? 'Uitschakelen' : 'Inschakelen'}
               </button>
             )}
-            {onDelete && <button className="btn-ghost" type="button" onClick={() => onDelete(product.id)}>Eliminar</button>}
+            {onDelete && <button className="btn-ghost" type="button" onClick={() => onDelete(product.id)}>Verwijderen</button>}
           </>
         )}
       </div>

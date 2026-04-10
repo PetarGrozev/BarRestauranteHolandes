@@ -20,15 +20,15 @@ function isCustomerRoute(pathname: string | null) {
 }
 
 const ADMIN_NAV_ITEMS = [
-  { href: '/tables', label: 'Mesas', icon: 'tables' as const },
-  { href: '/order', label: 'Pedidos', icon: 'orders' as const },
-  { href: '/kitchen', label: 'Cocina', icon: 'kitchen' as const },
-  { href: '/staff', label: 'Sala', icon: 'staff' as const },
+  { href: '/tables', label: 'Tafels', icon: 'tables' as const },
+  { href: '/order', label: 'Bestellingen', icon: 'orders' as const },
+  { href: '/kitchen', label: 'Keuken', icon: 'kitchen' as const },
+  { href: '/staff', label: 'Bediening', icon: 'staff' as const },
   { href: '/admin', label: 'Admin', icon: 'admin' as const },
 ];
 
 const SUPERADMIN_NAV_ITEMS = [
-  { href: '/superadmin', label: 'Restaurantes', icon: 'platform' as const },
+  { href: '/superadmin', label: 'Restaurants', icon: 'platform' as const },
 ];
 
 function NavIcon({ icon }: { icon: 'tables' | 'orders' | 'kitchen' | 'staff' | 'admin' | 'platform' }) {
@@ -120,7 +120,7 @@ export default function AppShell({ children, hasAdminSession = false, hasSuperAd
   const brandName = getBrandName(currentBrand);
   const brandLogoSrc = getBrandLogoSrc(currentBrand);
   const brandInitials = getBrandInitials(currentBrand);
-  const shellTitle = hasSuperAdminSession ? 'Control de plataforma' : brandName;
+  const shellTitle = hasSuperAdminSession ? 'Platformbeheer' : brandName;
   const shellSubtitle = hasSuperAdminSession ? 'Superadmin' : internalAppLabel;
   const navItems = hasSuperAdminSession ? SUPERADMIN_NAV_ITEMS : ADMIN_NAV_ITEMS;
   const [isPending, startTransition] = useTransition();
@@ -133,12 +133,12 @@ export default function AppShell({ children, hasAdminSession = false, hasSuperAd
       try {
         const response = await fetch('/api/auth/logout', { method: 'POST' });
         if (!response.ok) {
-          throw new Error('No se pudo cerrar la sesión.');
+          throw new Error('Afmelden is niet gelukt.');
         }
 
         window.location.href = '/login';
       } catch (error) {
-        setLogoutError(error instanceof Error ? error.message : 'No se pudo cerrar la sesión.');
+        setLogoutError(error instanceof Error ? error.message : 'Afmelden is niet gelukt.');
       }
     });
   };
@@ -169,8 +169,8 @@ export default function AppShell({ children, hasAdminSession = false, hasSuperAd
                   type="button"
                   onClick={handleLogout}
                   disabled={isPending}
-                  aria-label={isPending ? 'Cerrando sesión' : 'Cerrar sesión'}
-                  title={isPending ? 'Cerrando sesión' : 'Cerrar sesión'}
+                  aria-label={isPending ? 'Bezig met afmelden' : 'Afmelden'}
+                  title={isPending ? 'Bezig met afmelden' : 'Afmelden'}
                 >
                   <LogoutIcon />
                 </button>
@@ -178,7 +178,7 @@ export default function AppShell({ children, hasAdminSession = false, hasSuperAd
             </div>
             {(hasAdminSession || hasSuperAdminSession) && !loginRoute && (
               <div className="shell-header-actions">
-                <nav className="shell-nav" aria-label="Navegación interna">
+                <nav className="shell-nav" aria-label="Interne navigatie">
                   {navItems.map(item => (
                     <Link key={item.href} className={`shell-nav-link${isNavItemActive(pathname, item.href) ? ' is-active' : ''}`} href={item.href}>
                       <NavIcon icon={item.icon} />

@@ -134,22 +134,22 @@ const AdminOrderAlerts = () => {
   }
 
   const tableLabel = activeAlertOrder.table
-    ? `Mesa ${activeAlertOrder.table.number} · ${activeAlertOrder.table.area === 'TERRACE' ? 'Terraza' : 'Interior'}`
-    : 'Mesa no asignada';
+    ? `Tafel ${activeAlertOrder.table.number} · ${activeAlertOrder.table.area === 'TERRACE' ? 'Terras' : 'Binnen'}`
+    : 'Geen tafel toegewezen';
 
   const statusLabel = activeAlertOrder.status === 'PREPARING'
-    ? 'Sigue en preparación'
+    ? 'Nog in bereiding'
     : activeAlertOrder.status === 'READY'
-      ? 'Está listo pero no entregado'
-      : 'Sigue pendiente de entrega';
+      ? 'Klaar maar nog niet geleverd'
+      : 'Nog in afwachting van levering';
 
   return (
     <ConfirmDialog
       open={Boolean(activeAlertOrder)}
-      title="Pedido sin entregar"
-      message={`El pedido #${activeAlertOrder.id} ya ha superado los 10 minutos y todavía no está entregado.`}
-      confirmLabel="Entendido"
-      cancelLabel="Cerrar"
+      title="Bestelling nog niet geleverd"
+      message={`Bestelling #${activeAlertOrder.id} is al langer dan 10 minuten open en nog niet geleverd.`}
+      confirmLabel="Begrepen"
+      cancelLabel="Sluiten"
       confirmVariant="danger"
       onConfirm={dismissAlert}
       onCancel={dismissAlert}
