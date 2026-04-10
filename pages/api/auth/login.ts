@@ -6,6 +6,8 @@ import {
   buildAdminSessionCookie,
   buildExpiredCookie,
   createAdminSessionToken,
+  hashAdminPasswordUnchecked,
+  isLegacyAdminPasswordValid,
   isStoredAdminPasswordValid,
 } from '../../../lib/auth';
 import { getRestaurantBySlug, normalizeRestaurantSlug } from '../../../lib/restaurants';
@@ -41,7 +43,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ message: 'Credenciales incorrectas.' });
     }
 
-    if (!isStoredAdminPasswordValid(password, admin.passwordHash)) {
+    let shouldPersistMigratedPassword = false;
+    const hasValidStoredPassword = isStoredAdminPasswordValid(password, admin.passwordHash);
+
+    if (!hasValidStoredPassword) {
+      const canUseLegacyPassword = !admin.passwordHash && isLegacyAdminPasswordValid(password);
+
+      if (!canUseLegacyPassword) {
+        return res.status(401).json({ message: 'Credenciales incorrectas.' });
+      }
+
+      shouldPersistMigratedPassword = true;
+    }
+
+    if (shouldPersistMigratedPassword) {
+      await db.admin.update({
+        where: { id: admin.id },
+        data: { passwordHash: hashAdminPasswordUnchecked(password) },
+      });
+    }
+
+    if (!hasValidStoredPassword && !shouldPersistMigratedPassword) {
       return res.status(401).json({ message: 'Credenciales incorrectas.' });
     }
 

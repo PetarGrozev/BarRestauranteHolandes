@@ -89,10 +89,17 @@ This project uses Prisma with Supabase Postgres. You do not need to install the 
 Required environment variables:
 
 ```env
+AUTH_SECRET="replace-with-a-long-random-secret"
+ADMIN_PASSWORD="temporary-password-used-only-to-migrate-legacy-admins-without-passwordHash"
+SUPERADMIN_EMAIL="owner@example.com"
+SUPERADMIN_PASSWORD="replace-with-a-strong-password"
 DATABASE_URL="postgresql://postgres.<project-ref>:<password>@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
 DIRECT_URL="postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres"
 ```
 
+- `AUTH_SECRET`: signs admin and superadmin session cookies.
+- `ADMIN_PASSWORD`: one-time migration password for legacy restaurant admins that still have `passwordHash = null`; on first successful login the hash is stored in the database.
+- `SUPERADMIN_EMAIL` and `SUPERADMIN_PASSWORD`: credentials for `/superadmin`.
 - `DATABASE_URL`: pooled connection used by the deployed app.
 - `DIRECT_URL`: direct connection used by Prisma schema operations.
 
