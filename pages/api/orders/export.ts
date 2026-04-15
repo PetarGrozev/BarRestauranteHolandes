@@ -5,9 +5,11 @@ import { db } from '../../../lib/db';
 type ExportPeriod = 'daily' | 'weekly' | 'monthly';
 
 function toCsv(rows: any[]) {
-  const headers = rows.length > 0
-    ? Object.keys(rows[0])
-    : ['product', 'hoeveelheid', 'Eenheidsprijs', 'totaalVerkocht'];
+  const headers =
+    rows.length > 0
+      ? Object.keys(rows[0])
+      : ['Product', 'Hoeveelheid', 'Eenheidsprijs', 'Totaal verkocht'];
+
   const escape = (value: any) => {
     if (value == null) return '';
     const text = String(value);
@@ -16,8 +18,9 @@ function toCsv(rows: any[]) {
     }
     return text;
   };
+
   const headerRow = headers.join(',');
-  const dataRows = rows.map(r => headers.map(h => escape(r[h])).join(','));
+  const dataRows = rows.map((r) => headers.map((h) => escape(r[h])).join(','));
   return [headerRow, ...dataRows].join('\n');
 }
 
@@ -49,7 +52,14 @@ function getPeriodRange(period: ExportPeriod, now = new Date()) {
 
 function getFilename(period: ExportPeriod, date = new Date()) {
   const stamp = date.toISOString().slice(0, 10);
-  return `ventas-${period}-${stamp}.csv`;
+
+  const periodMap: Record<ExportPeriod, string> = {
+    daily: 'dagelijks',
+    weekly: 'wekelijks',
+    monthly: 'maandelijks',
+  };
+
+  return `verkopen-${periodMap[period]}-${stamp}.csv`;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -88,42 +98,56 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     });
 
-    const grouped = new Map<string, { producto: string; cantidad: number; precioUnitario: number; totalVendido: number }>();
+    const grouped = new Map<
+      string,
+      {
+        Product: string;
+        Hoeveelheid: number;
+        Eenheidsprijs: number;
+        'Totaal verkocht': number;
+      }
+    >();
 
     for (const order of orders) {
       for (const item of order.orderItems) {
-        const productName = item.product?.name ?? `Producto #${item.productId}`;
+        const productName = item.product?.name ?? `Product #${item.productId}`;
         const key = `${productName}:${item.price}`;
+
         const current = grouped.get(key) ?? {
-          producto: productName,
-          cantidad: 0,
-          precioUnitario: item.price,
-          totalVendido: 0,
+          Product: productName,
+          Hoeveelheid: 0,
+          Eenheidsprijs: item.price,
+          'Totaal verkocht': 0,
         };
 
-        current.cantidad += item.quantity;
-        current.totalVendido += item.quantity * item.price;
+        current.Hoeveelheid += item.quantity;
+        current['Totaal verkocht'] += item.quantity * item.price;
+
         grouped.set(key, current);
       }
     }
 
     const rows = Array.from(grouped.values())
       .sort((left, right) => {
-        const byName = left.producto.localeCompare(right.producto, 'es-ES', { sensitivity: 'base' });
+        const byName = left.Product.localeCompare(right.Product, 'nl-NL', {
+          sensitivity: 'base',
+        });
+
         if (byName !== 0) {
           return byName;
         }
 
-        return left.precioUnitario - right.precioUnitario;
+        return left.Eenheidsprijs - right.Eenheidsprijs;
       })
-      .map(row => ({
-        producto: row.producto,
-        cantidad: row.cantidad,
-        precioUnitario: row.precioUnitario.toFixed(2),
-        totalVendido: row.totalVendido.toFixed(2),
+      .map((row) => ({
+        Product: row.Product,
+        Hoeveelheid: row.Hoeveelheid,
+        Eenheidsprijs: row.Eenheidsprijs.toFixed(2),
+        'Totaal verkocht': row['Totaal verkocht'].toFixed(2),
       }));
 
     const csvData = toCsv(rows);
+
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename=${getFilename(period)}`);
     res.status(200).send(csvData);
