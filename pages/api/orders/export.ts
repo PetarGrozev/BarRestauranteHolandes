@@ -7,7 +7,7 @@ type ExportPeriod = 'daily' | 'weekly' | 'monthly';
 function toCsv(rows: any[]) {
   const headers = rows.length > 0
     ? Object.keys(rows[0])
-    : ['producto', 'cantidad', 'precioUnitario', 'totalVendido'];
+    : ['product', 'hoeveelheid', 'Eenheidsprijs', 'totaalVerkocht'];
   const escape = (value: any) => {
     if (value == null) return '';
     const text = String(value);
