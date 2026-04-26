@@ -350,7 +350,7 @@ const AdminTablesPage = () => {
       return;
     }
 
-    const printWindow = window.open('', '_blank', 'width=420,height=640');
+    const printWindow = window.open('', '_blank', 'width=620,height=860');
     if (!printWindow) {
       pushToast({ message: 'Het afdrukvenster kon niet worden geopend.', title: 'Tafel-QR', variant: 'error' });
       return;
@@ -366,21 +366,27 @@ const AdminTablesPage = () => {
           <meta charset="utf-8" />
           <title>QR Tafel ${table.number}</title>
           <style>
-            * { box-sizing: border-box; margin: 0; padding: 0; }
-            @page { size: A5; margin: 0; }
+            * {
+              box-sizing: border-box;
+              margin: 0;
+              padding: 0;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            @page {
+              size: A5 portrait;
+              margin: 12mm;
+            }
             body {
-              width: 148mm;
-              min-height: 210mm;
               font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
               background: #fff;
+              min-height: 100vh;
               display: flex;
               align-items: center;
               justify-content: center;
-              padding: 12mm;
             }
             .card {
-              width: 100%;
-              max-width: 112mm;
+              width: 112mm;
               border: 1.5px solid #1a1109;
               border-radius: 5mm;
               overflow: hidden;
@@ -390,7 +396,7 @@ const AdminTablesPage = () => {
             }
             .card-header {
               width: 100%;
-              background: #1a1109;
+              background: #1a1109 !important;
               padding: 9mm 8mm 8mm;
               display: flex;
               flex-direction: column;
@@ -398,7 +404,7 @@ const AdminTablesPage = () => {
               gap: 2.5mm;
             }
             .brand-name {
-              color: #d4a843;
+              color: #d4a843 !important;
               font-size: 8pt;
               font-weight: 700;
               letter-spacing: 0.18em;
@@ -406,26 +412,28 @@ const AdminTablesPage = () => {
             }
             .brand-rule {
               width: 20mm;
-              height: 0.3mm;
-              background: rgba(212,168,67,0.45);
+              height: 0.4mm;
+              background: #d4a843 !important;
+              opacity: 0.45;
               margin: 1mm 0;
             }
             .table-label {
-              color: rgba(255,255,255,0.45);
+              color: rgba(255,255,255,0.5) !important;
               font-size: 7pt;
               font-weight: 700;
               letter-spacing: 0.16em;
               text-transform: uppercase;
             }
             .table-number {
-              color: #fff;
+              color: #ffffff !important;
               font-size: 52pt;
               font-weight: 800;
               line-height: 1;
               letter-spacing: -0.03em;
             }
             .area-tag {
-              color: rgba(212,168,67,0.75);
+              color: #d4a843 !important;
+              opacity: 0.8;
               font-size: 7.5pt;
               font-weight: 600;
               letter-spacing: 0.1em;
@@ -439,17 +447,18 @@ const AdminTablesPage = () => {
               flex-direction: column;
               align-items: center;
               gap: 5mm;
+              background: #fff !important;
             }
             .qr-wrap {
-              width: 70mm;
-              height: 70mm;
+              width: 72mm;
+              height: 72mm;
               display: flex;
               align-items: center;
               justify-content: center;
               padding: 3mm;
               border: 1px solid #ddd;
               border-radius: 2.5mm;
-              background: #fff;
+              background: #fff !important;
             }
             .qr-wrap img {
               width: 100%;
@@ -459,13 +468,13 @@ const AdminTablesPage = () => {
             .instruction {
               font-size: 12pt;
               font-weight: 600;
-              color: #1a1109;
+              color: #1a1109 !important;
               text-align: center;
               letter-spacing: -0.01em;
             }
             .card-footer {
               width: 100%;
-              background: #f7f5f1;
+              background: #f7f5f1 !important;
               border-top: 1px solid #e6e2d8;
               padding: 4mm 8mm;
               display: flex;
@@ -475,14 +484,14 @@ const AdminTablesPage = () => {
             }
             .footer-label {
               font-size: 6pt;
-              color: #aaa;
+              color: #aaa !important;
               font-weight: 700;
               text-transform: uppercase;
               letter-spacing: 0.12em;
             }
             .footer-url {
               font-size: 7pt;
-              color: #777;
+              color: #666 !important;
               word-break: break-all;
               text-align: center;
               line-height: 1.5;
