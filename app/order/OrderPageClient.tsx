@@ -977,6 +977,7 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
       )}
 
       {hasTableContext && !missingSelectedTable && !isCustomerMode && (
+        <>
         <div className="order-workspace">
           <section className="order-products">
             <div className="order-browser-card">
@@ -1019,15 +1020,20 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
             </div>
 
             <div className="order-section-header">
-              <div>
-                <h2>{SECTION_COPY[activeSection].title}</h2>
-              </div>
+              <h2>{SECTION_COPY[activeSection].title}</h2>
               <span className="order-section-count">{visibleProducts.length} producten</span>
             </div>
 
-            <div className="product-grid product-grid--order">
+            <div className="menu-product-list">
               {visibleProducts.map(product => (
-                <ProductCard key={product.id} product={product} onOrder={addToCart} mode="order" disabled={!selectedTable?.isOpen} />
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onOrder={addToCart}
+                  onPreview={setPreviewProduct}
+                  mode="order"
+                  disabled={!selectedTable?.isOpen}
+                />
               ))}
             </div>
 
@@ -1107,6 +1113,48 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
             </div>
           </aside>
         </div>
+
+        {previewProduct && (
+          <div className="menu-product-modal-backdrop" role="presentation" onClick={() => setPreviewProduct(null)}>
+            <section
+              className="menu-product-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="menu-product-modal-title"
+              onClick={event => event.stopPropagation()}
+            >
+              {previewProduct.imageUrl ? (
+                <div className="menu-product-modal-hero">
+                  <div className="menu-product-modal-media" style={{ backgroundImage: `url(${previewProduct.imageUrl})` }} />
+                  <div className="menu-product-modal-hero-gradient" />
+                  <button className="menu-product-modal-close" type="button" onClick={() => setPreviewProduct(null)} aria-label="Sluiten">✕</button>
+                  <div className="menu-product-modal-hero-copy">
+                    <h2 id="menu-product-modal-title">{previewProduct.name}</h2>
+                    <span className="menu-product-modal-price-hero">{previewProduct.price.toFixed(2)} €</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="menu-product-modal-no-image">
+                  <button className="menu-product-modal-close" type="button" onClick={() => setPreviewProduct(null)} aria-label="Sluiten">✕</button>
+                  <h2 id="menu-product-modal-title">{previewProduct.name}</h2>
+                  <span className="menu-product-modal-price-hero">{previewProduct.price.toFixed(2)} €</span>
+                </div>
+              )}
+              <div className="menu-product-modal-body">
+                {previewProduct.description && (
+                  <p className="menu-product-modal-desc">{previewProduct.description.trim()}</p>
+                )}
+                <div className="menu-product-modal-actions">
+                  <button className="btn-ghost" type="button" onClick={() => setPreviewProduct(null)}>Terug</button>
+                  <button className="btn-primary menu-product-modal-add" type="button" onClick={handleAddPreviewProduct} disabled={!selectedTable?.isOpen}>
+                    Toevoegen aan bestelling
+                  </button>
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+        </>
       )}
 
       {!isCustomerMode && (
