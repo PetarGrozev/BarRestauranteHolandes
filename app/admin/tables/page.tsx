@@ -135,8 +135,9 @@ const AdminTablesPage = () => {
     Promise.all(
       tables.map(async table => {
         const qrDataUrl = await QRCode.toDataURL(getCustomerTableUrl(origin, table.id), {
-          width: 220,
-          margin: 1,
+          width: 600,
+          margin: 2,
+          color: { dark: '#1a1109', light: '#ffffff' },
         });
 
         return [table.id, qrDataUrl] as const;
@@ -174,7 +175,172 @@ const AdminTablesPage = () => {
   };
 
   const handlePrintAllQrs = () => {
-    window.print();
+    if (sortedTables.length === 0) return;
+
+    const notReady = sortedTables.some(t => !qrCodes[t.id]);
+    if (notReady) {
+      pushToast({ message: 'Wacht tot alle QR-codes zijn geladen.', title: 'Tafel-QR', variant: 'error' });
+      return;
+    }
+
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (!printWindow) {
+      pushToast({ message: 'Het afdrukvenster kon niet worden geopend.', title: 'Tafel-QR', variant: 'error' });
+      return;
+    }
+
+    const cardsHtml = sortedTables.map(table => {
+      const label = table.area === 'TERRACE' ? 'Terras' : 'Binnen';
+      const qrCode = qrCodes[table.id];
+      return `
+        <div class="card">
+          <div class="card-header">
+            <span class="brand-name">Bar &amp; Restaurant</span>
+            <div class="brand-rule"></div>
+            <span class="table-label">Tafel</span>
+            <span class="table-number">${table.number}</span>
+            <span class="area-tag">${label}</span>
+          </div>
+          <div class="card-body">
+            <div class="qr-wrap">
+              <img src="${qrCode}" alt="QR Tafel ${table.number}" />
+            </div>
+            <p class="instruction">Scan om te bestellen</p>
+          </div>
+        </div>`;
+    }).join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="nl">
+        <head>
+          <meta charset="utf-8" />
+          <title>QR-codes alle tafels</title>
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            @page { size: A4 portrait; margin: 12mm; }
+            body {
+              font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+              background: #fff;
+            }
+            .grid {
+              display: grid;
+              grid-template-columns: repeat(2, 86mm);
+              gap: 8mm;
+              justify-content: center;
+            }
+            .card {
+              width: 86mm;
+              break-inside: avoid;
+              border: 1.5px solid #1a1109;
+              border-radius: 4mm;
+              overflow: hidden;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+            }
+            .card-header {
+              width: 100%;
+              background: #1a1109;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+              padding: 5mm 6mm 5mm;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 2mm;
+            }
+            .brand-name {
+              color: #d4a843;
+              font-size: 7.5pt;
+              font-weight: 700;
+              letter-spacing: 0.18em;
+              text-transform: uppercase;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .brand-rule {
+              width: 18mm;
+              height: 0.3mm;
+              background: rgba(212,168,67,0.45);
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+              margin: 0.5mm 0;
+            }
+            .table-label {
+              color: rgba(255,255,255,0.45);
+              font-size: 7pt;
+              font-weight: 700;
+              letter-spacing: 0.16em;
+              text-transform: uppercase;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .table-number {
+              color: #fff;
+              font-size: 36pt;
+              font-weight: 800;
+              line-height: 1;
+              letter-spacing: -0.03em;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .area-tag {
+              color: rgba(212,168,67,0.75);
+              font-size: 7pt;
+              font-weight: 600;
+              letter-spacing: 0.1em;
+              text-transform: uppercase;
+              margin-top: 0.5mm;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .card-body {
+              width: 100%;
+              padding: 5mm 6mm 5mm;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 3.5mm;
+            }
+            .qr-wrap {
+              width: 58mm;
+              height: 58mm;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              padding: 2.5mm;
+              border: 1px solid #ddd;
+              border-radius: 2mm;
+              background: #fff;
+            }
+            .qr-wrap img {
+              width: 100%;
+              height: auto;
+              display: block;
+            }
+            .instruction {
+              font-size: 9.5pt;
+              font-weight: 600;
+              color: #1a1109;
+              text-align: center;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="grid">
+            ${cardsHtml}
+          </div>
+          <script>
+            window.onload = function () {
+              window.print();
+              window.onafterprint = function () { window.close(); };
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const handlePrintSingleQr = (table: DiningTable) => {
@@ -194,61 +360,153 @@ const AdminTablesPage = () => {
     const customerUrl = getCustomerTableUrl(origin, table.id);
 
     printWindow.document.write(`
-      <html>
+      <!DOCTYPE html>
+      <html lang="nl">
         <head>
+          <meta charset="utf-8" />
           <title>QR Tafel ${table.number}</title>
           <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            @page { size: A5; margin: 0; }
             body {
-              margin: 0;
-              font-family: "Segoe UI", sans-serif;
-              color: #0f172a;
-              background: #ffffff;
-            }
-            .sheet {
-              min-height: 100vh;
+              width: 148mm;
+              min-height: 210mm;
+              font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+              background: #fff;
               display: flex;
               align-items: center;
               justify-content: center;
-              padding: 24px;
+              padding: 12mm;
             }
             .card {
               width: 100%;
-              max-width: 320px;
-              border: 2px solid #0f172a;
-              border-radius: 18px;
-              padding: 24px;
-              text-align: center;
+              max-width: 112mm;
+              border: 1.5px solid #1a1109;
+              border-radius: 5mm;
+              overflow: hidden;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
             }
-            h1 {
-              margin: 0 0 8px;
-              font-size: 28px;
-            }
-            p {
-              margin: 0 0 14px;
-              font-size: 14px;
-              color: #475569;
-            }
-            img {
+            .card-header {
               width: 100%;
-              max-width: 220px;
+              background: #1a1109;
+              padding: 9mm 8mm 8mm;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 2.5mm;
+            }
+            .brand-name {
+              color: #d4a843;
+              font-size: 8pt;
+              font-weight: 700;
+              letter-spacing: 0.18em;
+              text-transform: uppercase;
+            }
+            .brand-rule {
+              width: 20mm;
+              height: 0.3mm;
+              background: rgba(212,168,67,0.45);
+              margin: 1mm 0;
+            }
+            .table-label {
+              color: rgba(255,255,255,0.45);
+              font-size: 7pt;
+              font-weight: 700;
+              letter-spacing: 0.16em;
+              text-transform: uppercase;
+            }
+            .table-number {
+              color: #fff;
+              font-size: 52pt;
+              font-weight: 800;
+              line-height: 1;
+              letter-spacing: -0.03em;
+            }
+            .area-tag {
+              color: rgba(212,168,67,0.75);
+              font-size: 7.5pt;
+              font-weight: 600;
+              letter-spacing: 0.1em;
+              text-transform: uppercase;
+              margin-top: 1mm;
+            }
+            .card-body {
+              width: 100%;
+              padding: 7mm 8mm 6mm;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 5mm;
+            }
+            .qr-wrap {
+              width: 70mm;
+              height: 70mm;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              padding: 3mm;
+              border: 1px solid #ddd;
+              border-radius: 2.5mm;
+              background: #fff;
+            }
+            .qr-wrap img {
+              width: 100%;
               height: auto;
               display: block;
-              margin: 18px auto;
             }
-            .link {
+            .instruction {
+              font-size: 12pt;
+              font-weight: 600;
+              color: #1a1109;
+              text-align: center;
+              letter-spacing: -0.01em;
+            }
+            .card-footer {
+              width: 100%;
+              background: #f7f5f1;
+              border-top: 1px solid #e6e2d8;
+              padding: 4mm 8mm;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 1.5mm;
+            }
+            .footer-label {
+              font-size: 6pt;
+              color: #aaa;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.12em;
+            }
+            .footer-url {
+              font-size: 7pt;
+              color: #777;
               word-break: break-all;
-              font-size: 11px;
+              text-align: center;
+              line-height: 1.5;
             }
           </style>
         </head>
         <body>
-          <div class="sheet">
-            <div class="card">
-              <h1>Tafel ${table.number}</h1>
-              <p>${label}</p>
-              <img src="${qrCode}" alt="QR Tafel ${table.number}" />
-              <p>Scan om je bestelling te plaatsen</p>
-              <p class="link">${customerUrl}</p>
+          <div class="card">
+            <div class="card-header">
+              <span class="brand-name">Bar &amp; Restaurant</span>
+              <div class="brand-rule"></div>
+              <span class="table-label">Tafel</span>
+              <span class="table-number">${table.number}</span>
+              <span class="area-tag">${label}</span>
+            </div>
+            <div class="card-body">
+              <div class="qr-wrap">
+                <img src="${qrCode}" alt="QR Tafel ${table.number}" />
+              </div>
+              <p class="instruction">Scan om te bestellen</p>
+            </div>
+            <div class="card-footer">
+              <span class="footer-label">URL</span>
+              <span class="footer-url">${customerUrl}</span>
             </div>
           </div>
           <script>

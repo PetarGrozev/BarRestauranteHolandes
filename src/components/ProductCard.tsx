@@ -26,32 +26,32 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onOrder, onPreview, 
 
     if (onPreview) {
       return (
-        <article className="product-pick-card">
-          <button
-            className={`product-pick-preview-zone${hasImage ? ' product-pick-preview-zone--image' : ''}`}
-            type="button"
-            onClick={() => onPreview(product)}
-            disabled={disabled}
-          >
-            {hasImage && (
-              <>
-                <span className="product-pick-media" aria-hidden="true" style={{ backgroundImage: `url(${product.imageUrl})` }} />
-                <span className="product-pick-scrim" aria-hidden="true" />
-              </>
-            )}
-
-            <span className="product-pick-content">
-              <span className="product-pick-name">{product.name}</span>
-              {product.description && <span className="product-pick-desc">{product.description}</span>}
-            </span>
-          </button>
-
-          <div className="product-pick-action-bar">
-            <span className="product-pick-price">&euro;{product.price.toFixed(2)}</span>
-            <button className="product-pick-add-button" type="button" onClick={() => onOrder(product)} disabled={disabled}>
-              Toevoegen
-            </button>
+        <article
+          className="menu-row-card"
+          onClick={() => !disabled && onPreview(product)}
+          aria-disabled={disabled}
+        >
+          <div className="menu-row-info">
+            <span className="menu-row-name">{product.name}</span>
+            {product.description && <span className="menu-row-desc">{product.description}</span>}
+            <div className="menu-row-footer">
+              <span className="menu-row-price">&euro;{product.price.toFixed(2)}</span>
+              <button
+                className="menu-row-add"
+                type="button"
+                onClick={e => { e.stopPropagation(); onOrder(product); }}
+                disabled={disabled}
+                aria-label={`${product.name} toevoegen`}
+              >
+                +
+              </button>
+            </div>
           </div>
+          {hasImage && (
+            <div className="menu-row-image-wrap" aria-hidden="true">
+              <span className="menu-row-image" style={{ backgroundImage: `url(${product.imageUrl})` }} />
+            </div>
+          )}
         </article>
       );
     }

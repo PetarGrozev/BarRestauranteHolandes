@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import AppToastStack from '@/components/AppToast';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -11,7 +11,7 @@ import ProductCard from '@/components/ProductCard';
 import { MENU_COURSE_LABELS } from '@/lib/menuCourses';
 import { ORDER_ALERT_DELAY_MS } from '@/lib/orderTimers';
 import type { Product, CartItem, DiningTable, TableArea, TableCheckoutSummary, Menu } from '@/types';
-import { getMenuCategory, getProductSection, productMatchesSearch, groupProductsByMenuCategory, MENU_CATEGORIES, MENU_CATEGORY_META, type ProductSection } from '@/lib/productCategories';
+import { getMenuCategory, getProductSection, productMatchesSearch, groupProductsByMenuCategory, MENU_CATEGORIES, MENU_CATEGORY_META, type MenuCategory, type ProductSection } from '@/lib/productCategories';
 
 const ORDER_ITEM_NOTE_MAX_LENGTH = 280;
 
@@ -55,6 +55,9 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
   const [orderPendingDeletion, setOrderPendingDeletion] = useState<(typeof orders)[number] | null>(null);
   const [deletingOrder, setDeletingOrder] = useState(false);
   const [activeSection, setActiveSection] = useState<ProductSection>('DRINKS');
+  const [activeMenuTab, setActiveMenuTab] = useState<MenuCategory | 'MENUS' | 'ALL' | null>(null);
+  const [menuDropdownOpen, setMenuDropdownOpen] = useState(false);
+  const menuDropdownRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState('');
   const [activeCartNoteId, setActiveCartNoteId] = useState<string | null>(null);
   const [cartNoteDraft, setCartNoteDraft] = useState('');
@@ -200,6 +203,24 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
       }),
     );
   }, [products]);
+
+  useEffect(() => {
+    if (!isCustomerMode || activeMenuTab !== null) return;
+    if (activeMenuCategories.length > 0 || availableMenus.length > 0) {
+      setActiveMenuTab('ALL');
+    }
+  }, [isCustomerMode, availableMenus.length, activeMenuCategories, activeMenuTab]);
+
+  useEffect(() => {
+    if (!menuDropdownOpen) return;
+    const handleOutside = (e: MouseEvent) => {
+      if (menuDropdownRef.current && !menuDropdownRef.current.contains(e.target as Node)) {
+        setMenuDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [menuDropdownOpen]);
 
   const buildCartLineId = (productId: number) => {
     return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
@@ -617,13 +638,72 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
             )}
           </header>
 
+          <div className="menu-cat-dropdown" ref={menuDropdownRef}>
+            <button
+              className="menu-cat-trigger"
+              type="button"
+              onClick={() => setMenuDropdownOpen(prev => !prev)}
+              aria-expanded={menuDropdownOpen}
+              aria-haspopup="listbox"
+            >
+              <span className="menu-cat-trigger-label">
+                {activeMenuTab === null && 'Categorie kiezen'}
+                {activeMenuTab === 'ALL' && 'De hele brief'}
+                {activeMenuTab === 'MENUS' && "Menu's"}
+                {activeMenuTab !== null && activeMenuTab !== 'MENUS' && activeMenuTab !== 'ALL' && (
+                  <>{MENU_CATEGORY_META[activeMenuTab].label}</>
+                )}
+              </span>
+              <span className="menu-cat-trigger-chevron" aria-hidden="true">
+                {menuDropdownOpen ? '▲' : '▼'}
+              </span>
+            </button>
+
+            {menuDropdownOpen && (
+              <div className="menu-cat-panel" role="listbox">
+                <button
+                  className={`menu-cat-option${activeMenuTab === 'ALL' ? ' is-active' : ''}`}
+                  type="button"
+                  role="option"
+                  aria-selected={activeMenuTab === 'ALL'}
+                  onClick={() => { setActiveMenuTab('ALL'); setMenuDropdownOpen(false); }}
+                >
+                  De hele brief
+                </button>
+                {availableMenus.length > 0 && (
+                  <button
+                    className={`menu-cat-option${activeMenuTab === 'MENUS' ? ' is-active' : ''}`}
+                    type="button"
+                    role="option"
+                    aria-selected={activeMenuTab === 'MENUS'}
+                    onClick={() => { setActiveMenuTab('MENUS'); setMenuDropdownOpen(false); }}
+                  >
+                    Menu&apos;s
+                  </button>
+                )}
+                {activeMenuCategories.map(cat => (
+                  <button
+                    key={cat}
+                    className={`menu-cat-option${activeMenuTab === cat ? ' is-active' : ''}`}
+                    type="button"
+                    role="option"
+                    aria-selected={activeMenuTab === cat}
+                    onClick={() => { setActiveMenuTab(cat); setMenuDropdownOpen(false); }}
+                  >
+                    {MENU_CATEGORY_META[cat].label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="menu-body">
             <div className="menu-sections">
-              {availableMenus.length > 0 && (
+              {(activeMenuTab === 'MENUS' || activeMenuTab === 'ALL') && availableMenus.length > 0 && (
                 <section className="menu-section menu-section--specials">
                   <div className="menu-section-header">
                     <div className="menu-section-copy">
-                      <h2>Menu\'s</h2>
+                      <h2>Menu&apos;s</h2>
                       <p>Combineer meerdere gangen en laat de klant per blok een optie kiezen.</p>
                     </div>
                   </div>
@@ -655,38 +735,57 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
                 </section>
               )}
 
-              {activeMenuCategories.map(cat => {
-                const items = menuGrouped ? menuGrouped[cat] : [];
-                return (
-                  <section
-                    key={cat}
-                    className="menu-section"
-                  >
-                    <div className="menu-section-header">
-                      <div className="menu-section-copy">
-                        <h2>{MENU_CATEGORY_META[cat].label}</h2>
-                        <p>{MENU_CATEGORY_META[cat].tagline}</p>
-                      </div>
+              {activeMenuTab === 'ALL' && menuGrouped && activeMenuCategories.map(cat => (
+                <section key={cat} className="menu-section">
+                  <div className="menu-section-header">
+                    <div className="menu-section-copy">
+                      <h2>{MENU_CATEGORY_META[cat].label}</h2>
+                      <p>{MENU_CATEGORY_META[cat].tagline}</p>
                     </div>
-                    {items.length > 0 ? (
-                      <div className="menu-product-grid">
-                        {items.map(product => (
-                          <ProductCard
-                            key={product.id}
-                            product={product}
-                            onOrder={addToCart}
-                            onPreview={setPreviewProduct}
-                            mode="order"
-                            disabled={!selectedTable.isOpen}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="menu-section-empty">Geen resultaten in deze categorie</p>
-                    )}
-                  </section>
-                );
-              })}
+                  </div>
+                  {menuGrouped[cat].length > 0 ? (
+                    <div className="menu-product-list">
+                      {menuGrouped[cat].map(product => (
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          onOrder={addToCart}
+                          onPreview={setPreviewProduct}
+                          mode="order"
+                          disabled={!selectedTable.isOpen}
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                </section>
+              ))}
+
+              {activeMenuTab !== null && activeMenuTab !== 'MENUS' && activeMenuTab !== 'ALL' && menuGrouped && (
+                <section className="menu-section">
+                  <div className="menu-section-header">
+                    <div className="menu-section-copy">
+                      <h2>{MENU_CATEGORY_META[activeMenuTab].label}</h2>
+                      <p>{MENU_CATEGORY_META[activeMenuTab].tagline}</p>
+                    </div>
+                  </div>
+                  {menuGrouped[activeMenuTab].length > 0 ? (
+                    <div className="menu-product-list">
+                      {menuGrouped[activeMenuTab].map(product => (
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          onOrder={addToCart}
+                          onPreview={setPreviewProduct}
+                          mode="order"
+                          disabled={!selectedTable.isOpen}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="menu-section-empty">Geen resultaten in deze categorie</p>
+                  )}
+                </section>
+              )}
             </div>
 
             <aside className="menu-cart" id="order-cart-panel">
@@ -765,28 +864,34 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
                 aria-labelledby="menu-product-modal-title"
                 onClick={event => event.stopPropagation()}
               >
-                {previewProduct.imageUrl && (
-                  <div className="menu-product-modal-media-wrap" aria-hidden="true">
+                {previewProduct.imageUrl ? (
+                  <div className="menu-product-modal-hero">
                     <div className="menu-product-modal-media" style={{ backgroundImage: `url(${previewProduct.imageUrl})` }} />
-                    <div className="menu-product-modal-media-overlay" />
+                    <div className="menu-product-modal-hero-gradient" />
+                    <button className="menu-product-modal-close" type="button" onClick={() => setPreviewProduct(null)} aria-label="Sluiten">✕</button>
+                    <div className="menu-product-modal-hero-copy">
+                      <h2 id="menu-product-modal-title">{previewProduct.name}</h2>
+                      <span className="menu-product-modal-price-hero">{previewProduct.price.toFixed(2)} €</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="menu-product-modal-no-image">
+                    <button className="menu-product-modal-close" type="button" onClick={() => setPreviewProduct(null)} aria-label="Sluiten">✕</button>
+                    <h2 id="menu-product-modal-title">{previewProduct.name}</h2>
+                    <span className="menu-product-modal-price-hero">{previewProduct.price.toFixed(2)} €</span>
                   </div>
                 )}
 
                 <div className="menu-product-modal-body">
-                  <h2 id="menu-product-modal-title">{previewProduct.name}</h2>
-                  <strong className="menu-product-modal-price">{previewProduct.price.toFixed(2)} €</strong>
-
-                  <div className="menu-product-modal-copy">
-                    <h3>Wat zit erin</h3>
-                    <p>{previewProduct.description?.trim() || 'Dit product heeft nog geen gedetailleerde beschrijving.'}</p>
-                  </div>
-
+                  {previewProduct.description && (
+                    <p className="menu-product-modal-desc">{previewProduct.description.trim()}</p>
+                  )}
                   <div className="menu-product-modal-actions">
                     <button className="btn-ghost" type="button" onClick={() => setPreviewProduct(null)}>
-                      Verder kijken
+                      Terug
                     </button>
                     <button className="btn-primary menu-product-modal-add" type="button" onClick={handleAddPreviewProduct} disabled={!selectedTable.isOpen}>
-                      Aan bestelling toevoegen
+                      Toevoegen aan bestelling
                     </button>
                   </div>
                 </div>
