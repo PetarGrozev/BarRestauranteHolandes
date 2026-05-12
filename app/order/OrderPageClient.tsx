@@ -50,7 +50,11 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
   const [cart, setCart] = useState<CartItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [closingTable, setClosingTable] = useState(false);
+  const [clearingTable, setClearingTable] = useState(false);
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const [reopeningTable, setReopeningTable] = useState(false);
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [movingTable, setMovingTable] = useState(false);
   const [lastCheckoutSummary, setLastCheckoutSummary] = useState<TableCheckoutSummary | null>(null);
   const [orderPendingDeletion, setOrderPendingDeletion] = useState<(typeof orders)[number] | null>(null);
   const [deletingOrder, setDeletingOrder] = useState(false);
@@ -494,6 +498,77 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
     }
   };
 
+  const handleClearTable = async () => {
+    if (!selectedTable) return;
+    setClearingTable(true);
+    try {
+      const response = await fetch(`/api/tables/${selectedTable.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'clear' }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        pushToast({ message: payload?.error ?? 'De tafel kon niet worden vrijgemaakt.', title: 'Tafel', variant: 'error' });
+        return;
+      }
+
+      const data = await response.json();
+      if (data.table) {
+        setTables(prev => prev.map(t => (t.id === data.table.id ? data.table : t)));
+      }
+      setLastCheckoutSummary(null);
+      setCart([]);
+      await Promise.all([refreshOrders(), loadTables()]);
+      pushToast({ message: 'Tafel vrijgemaakt en klaar voor nieuwe gasten.', title: 'Tafel', variant: 'success' });
+    } catch {
+      pushToast({ message: 'De tafel kon niet worden vrijgemaakt.', title: 'Tafel', variant: 'error' });
+    } finally {
+      setClearingTable(false);
+      setClearConfirmOpen(false);
+    }
+  };
+
+  const handleMoveTable = async (targetTableId: number) => {
+    if (!selectedTable) return;
+    setMovingTable(true);
+    try {
+      const response = await fetch(`/api/tables/${selectedTable.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'move', targetTableId }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        pushToast({ message: payload?.error ?? 'Tafel verplaatsen is mislukt.', title: 'Tafel', variant: 'error' });
+        return;
+      }
+
+      const data = await response.json();
+      await loadTables();
+      await refreshOrders();
+      setMoveDialogOpen(false);
+      pushToast({ message: `Gasten verplaatst naar tafel ${data.toTable?.number}.`, title: 'Tafel', variant: 'success' });
+      // Navigate to the new table
+      const target = (data.toTable ?? null) as { id: number } | null;
+      if (target) {
+        window.location.href = `/order?tableId=${target.id}`;
+      }
+    } catch {
+      pushToast({ message: 'Tafel verplaatsen is mislukt.', title: 'Tafel', variant: 'error' });
+    } finally {
+      setMovingTable(false);
+    }
+  };
+
+  const freeTables = tables.filter(t =>
+    t.isActive &&
+    t.id !== selectedTable?.id &&
+    (!t.isOpen || (t.currentOrderCount ?? 0) === 0),
+  );
+
   return (
     <div className={`order-page${isCustomerMode ? ' order-page--customer' : ''}`}>
       {hasTableContext && !isCustomerMode && (
@@ -523,9 +598,17 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
               </p>
             </div>
             {selectedTable.isOpen ? (
-              <button className="btn-primary" type="button" onClick={handleCloseTable} disabled={closingTable}>
-                {closingTable ? 'Tafel afsluiten...' : 'Tafel afsluiten en totaal tonen'}
-              </button>
+              <div className="table-session-actions">
+                <button className="btn-secondary" type="button" onClick={() => setMoveDialogOpen(true)} disabled={closingTable || clearingTable}>
+                  Tafel verplaatsen
+                </button>
+                <button className="btn-primary" type="button" onClick={handleCloseTable} disabled={closingTable || clearingTable}>
+                  {closingTable ? 'Afsluiten...' : 'Rekening tonen'}
+                </button>
+                <button className="btn-danger" type="button" onClick={() => setClearConfirmOpen(true)} disabled={closingTable || clearingTable}>
+                  {clearingTable ? 'Vrijmaken...' : 'Betaald – tafel vrijmaken'}
+                </button>
+              </div>
             ) : (
               <button className="btn-secondary" type="button" onClick={handleReopenTable} disabled={reopeningTable}>
                 {reopeningTable ? 'Tafel openen...' : 'Tafel openen voor nieuwe gasten'}
@@ -610,6 +693,55 @@ export default function OrderPageClient({ initialTableId, mode = 'staff' }: Orde
             <span>{orderPendingDeletion.orderItems.length} regels in de bestelling</span>
           </div>
         </ConfirmDialog>
+      )}
+
+      <ConfirmDialog
+        open={clearConfirmOpen}
+        title="Tafel vrijmaken"
+        message="De gasten hebben betaald. Dit sluit de huidige bon af en maakt de tafel direct vrij voor nieuwe gasten."
+        confirmLabel={clearingTable ? 'Vrijmaken...' : 'Ja, tafel vrijmaken'}
+        cancelLabel="Annuleren"
+        confirmVariant="danger"
+        busy={clearingTable}
+        onConfirm={handleClearTable}
+        onCancel={() => setClearConfirmOpen(false)}
+      />
+
+      {moveDialogOpen && (
+        <div className="confirm-dialog-backdrop" role="presentation">
+          <div className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="move-dialog-title">
+            <h2 id="move-dialog-title">Tafel verplaatsen</h2>
+            <p className="confirm-dialog-message">Kies de tafel waarnaar je de gasten wilt verplaatsen. De huidige tafel wordt daarna vrijgemaakt.</p>
+            {freeTables.length === 0 ? (
+              <p style={{ marginTop: '1rem', color: 'var(--color-text-muted, #666)' }}>Geen vrije tafels beschikbaar.</p>
+            ) : (
+              <div className="move-table-grid">
+                {freeTables.map(t => (
+                  <button
+                    key={t.id}
+                    className={`table-button table-button--selector${t.isOpen ? ' table-button--open' : ' table-button--closed'}`}
+                    type="button"
+                    disabled={movingTable}
+                    onClick={() => handleMoveTable(t.id)}
+                  >
+                    <span className="table-button-title-row">
+                      <span className="table-button-title">Tafel {t.number}</span>
+                      <span className={`table-status-badge${t.isOpen ? ' table-status-badge--open' : ' table-status-badge--closed'}`}>
+                        {t.isOpen ? 'Open (leeg)' : 'Vrij'}
+                      </span>
+                    </span>
+                    <span className="table-button-meta">{TABLE_AREA_LABELS[t.area]}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="confirm-dialog-actions">
+              <button className="btn-ghost" type="button" onClick={() => setMoveDialogOpen(false)} disabled={movingTable}>
+                Annuleren
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <AppToastStack toasts={toasts} onClose={removeToast} />

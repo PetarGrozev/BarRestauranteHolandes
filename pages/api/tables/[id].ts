@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getAdminSessionFromApiRequest, isCustomerTableRequestAllowed } from '../../../lib/auth';
 import { getRestaurantContextFromRequest } from '../../../lib/restaurant-context';
-import { closeTableSession, getTableById, reopenTableSession } from '../../../lib/db';
+import { clearTableSession, closeTableSession, getTableById, moveTableSession, reopenTableSession } from '../../../lib/db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const tableId = Number(req.query.id);
@@ -58,6 +58,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(200).json({ table });
       }
 
+      if (action === 'clear') {
+        if (!adminSession) {
+          return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const result = await clearTableSession(context.restaurantId, tableId);
+        return res.status(200).json(result);
+      }
+
+      if (action === 'move') {
+        if (!adminSession) {
+          return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const targetTableId = Number(req.body?.targetTableId);
+        if (!Number.isInteger(targetTableId) || targetTableId <= 0) {
+          return res.status(400).json({ error: 'Invalid targetTableId' });
+        }
+
+        const result = await moveTableSession(context.restaurantId, tableId, targetTableId);
+        return res.status(200).json(result);
+      }
+
       return res.status(400).json({ error: 'Invalid action' });
     } catch (error) {
       console.error('table session error', error);
@@ -67,13 +90,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return res.status(404).json({ error: 'Table not found' });
         }
 
+        if (error.message === 'TARGET_TABLE_NOT_FOUND') {
+          return res.status(404).json({ error: 'Target table not found' });
+        }
+
         if (error.message === 'TABLE_ALREADY_CLOSED') {
           return res.status(409).json({ error: 'Table is already closed' });
         }
 
-          if (error.message === 'TABLE_HAS_ACTIVE_ORDERS') {
-            return res.status(409).json({ error: 'No puedes cerrar la mesa mientras tenga pedidos activos.' });
-          }
+        if (error.message === 'TABLE_HAS_ACTIVE_ORDERS') {
+          return res.status(409).json({ error: 'No puedes cerrar la mesa mientras tenga pedidos activos.' });
+        }
+
+        if (error.message === 'TARGET_TABLE_OCCUPIED') {
+          return res.status(409).json({ error: 'La mesa destino ya está ocupada.' });
+        }
+
+        if (error.message === 'SAME_TABLE') {
+          return res.status(400).json({ error: 'La mesa destino es la misma que la actual.' });
+        }
       }
 
       return res.status(500).json({ error: 'Failed to update table state' });

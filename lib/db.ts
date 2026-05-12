@@ -430,6 +430,112 @@ export async function reopenTableSession(restaurantId: number, tableId: number) 
   });
 }
 
+export async function clearTableSession(restaurantId: number, tableId: number) {
+  return db.$transaction(async transaction => {
+    const table = await transaction.diningTable.findFirst({
+      where: { id: tableId, restaurantId },
+      include: {
+        orders: {
+          include: {
+            orderItems: {
+              include: {
+                product: { select: { id: true, name: true } },
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    }) as TableWithOrders | null;
+
+    if (!table || !table.isActive) {
+      throw new Error('TABLE_NOT_FOUND');
+    }
+
+    if (!table.isOpen) {
+      throw new Error('TABLE_ALREADY_CLOSED');
+    }
+
+    const sessionOrders = table.orders.filter(order => order.tableSession === table.currentSession);
+    const activeOrders = sessionOrders.filter(order => order.status !== 'DELIVERED');
+
+    if (activeOrders.length > 0) {
+      throw new Error('TABLE_HAS_ACTIVE_ORDERS');
+    }
+
+    const summary = buildSessionSummary(table, sessionOrders);
+    const closedAt = new Date();
+
+    await transaction.diningTable.update({
+      where: { id: tableId },
+      data: {
+        isOpen: true,
+        currentSession: table.currentSession + 1,
+        openedAt: closedAt,
+        lastClosedAt: closedAt,
+        lastClosedTotal: summary.total,
+        lastClosedOrderCount: summary.orderCount,
+        lastClosedItemCount: summary.itemCount,
+      },
+    });
+
+    return {
+      table: await getTableById(restaurantId, tableId),
+      summary: { ...summary, closedAt: closedAt.toISOString() },
+    };
+  });
+}
+
+export async function moveTableSession(restaurantId: number, fromTableId: number, toTableId: number) {
+  if (fromTableId === toTableId) {
+    throw new Error('SAME_TABLE');
+  }
+
+  return db.$transaction(async transaction => {
+    const [fromTable, toTable] = await Promise.all([
+      transaction.diningTable.findFirst({ where: { id: fromTableId, restaurantId } }),
+      transaction.diningTable.findFirst({ where: { id: toTableId, restaurantId } }),
+    ]);
+
+    if (!fromTable || !fromTable.isActive) throw new Error('TABLE_NOT_FOUND');
+    if (!toTable || !toTable.isActive) throw new Error('TARGET_TABLE_NOT_FOUND');
+    if (!fromTable.isOpen) throw new Error('TABLE_ALREADY_CLOSED');
+
+    // Allow moving to an open table only if it has no orders in the current session
+    if (toTable.isOpen) {
+      const existingOrders = await transaction.order.count({
+        where: { tableId: toTableId, tableSession: toTable.currentSession },
+      });
+      if (existingOrders > 0) throw new Error('TARGET_TABLE_OCCUPIED');
+    }
+
+    // If target is already open with 0 orders, reuse its current session; otherwise start a new one
+    const nextSession = toTable.isOpen ? toTable.currentSession : toTable.currentSession + 1;
+
+    await transaction.order.updateMany({
+      where: { tableId: fromTableId, tableSession: fromTable.currentSession },
+      data: { tableId: toTableId, tableSession: nextSession },
+    });
+
+    await transaction.diningTable.update({
+      where: { id: toTableId },
+      data: { isOpen: true, currentSession: nextSession, openedAt: toTable.openedAt ?? new Date() },
+    });
+
+    await transaction.diningTable.update({
+      where: { id: fromTableId },
+      data: { isOpen: false, openedAt: null },
+    });
+
+    const [updatedFrom, updatedTo] = await Promise.all([
+      getTableById(restaurantId, fromTableId),
+      getTableById(restaurantId, toTableId),
+    ]);
+
+    return { fromTable: updatedFrom, toTable: updatedTo };
+  });
+}
+
 export async function deleteOrder(restaurantId: number, orderId: number) {
   return db.$transaction(async transaction => {
     const order = await transaction.order.findFirst({
